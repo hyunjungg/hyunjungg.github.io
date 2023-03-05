@@ -1,7 +1,7 @@
 ---
 title: 'Detecting Format String Bugs with Libdft'
 date: 2023-03-05 16:58:13
-category: 'binary analysis'
+category: 'binary_analysis'
 draft: false
 ---
 
