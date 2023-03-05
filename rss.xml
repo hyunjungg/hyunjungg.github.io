@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Hyunjung's Blog]]></title><description><![CDATA[보안과 개발을 좋아하는 학생입니다~^^]]></description><link>https://hyunjungg.github.io</link><generator>GatsbyJS</generator><lastBuildDate>Sun, 05 Mar 2023 08:46:45 GMT</lastBuildDate><item><title><![CDATA[Detecting Format String Bugs with Libdft]]></title><description><![CDATA[본 글에서는 DTA라이브러리인 LIBDFT64를 사용하는 방법을 간단한 예제와 함께 설명합니다.  1. LIBDFT64?  기존에 많이 알려져 있는 libdft는 32비트 바이너리만 지원하는데, 리서치 도중 64비트 호환이 가능하게 libdft6…]]></description><link>https://hyunjungg.github.io/binary_analysis/Detecting_FSB_with_DTA/</link><guid isPermaLink="false">https://hyunjungg.github.io/binary_analysis/Detecting_FSB_with_DTA/</guid><pubDate>Sun, 05 Mar 2023 16:58:13 GMT</pubDate><content:encoded>&lt;p&gt;본 글에서는 DTA라이브러리인 LIBDFT64를 사용하는 방법을 간단한 예제와 함께 설명합니다. &lt;/p&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Hyunjung's Blog]]></title><description><![CDATA[보안과 개발을 좋아하는 학생입니다~^^]]></description><link>https://hyunjungg.github.io</link><generator>GatsbyJS</generator><lastBuildDate>Sun, 05 Mar 2023 08:56:30 GMT</lastBuildDate><item><title><![CDATA[Detecting Format String Bugs with Libdft64]]></title><description><![CDATA[본 글에서는 DTA라이브러리인 LIBDFT64를 사용하는 방법을 간단한 예제와 함께 설명합니다.  1. LIBDFT64?  기존에 많이 알려져 있는 libdft는 32비트 바이너리만 지원하는데, 리서치 도중 64비트 호환이 가능하게 libdft6…]]></description><link>https://hyunjungg.github.io/binary_analysis/Detecting_FSB_with_DTA/</link><guid isPermaLink="false">https://hyunjungg.github.io/binary_analysis/Detecting_FSB_with_DTA/</guid><pubDate>Sun, 05 Mar 2023 16:58:13 GMT</pubDate><content:encoded>&lt;p&gt;본 글에서는 DTA라이브러리인 LIBDFT64를 사용하는 방법을 간단한 예제와 함께 설명합니다. &lt;/p&gt;
 &lt;h1 id=&quot;1-libdft64&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#1-libdft64&quot; aria-label=&quot;1 libdft64 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;1. LIBDFT64?&lt;/h1&gt;
 &lt;p&gt;&lt;span
       class=&quot;gatsby-resp-image-wrapper&quot;
@@ -36,7 +36,27 @@
 &lt;h2 id=&quot;c-dta의-세-가지-요소&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#c-dta%EC%9D%98-%EC%84%B8-%EA%B0%80%EC%A7%80-%EC%9A%94%EC%86%8C&quot; aria-label=&quot;c dta의 세 가지 요소 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;C. DTA의 세 가지 요소&lt;/h2&gt;
 &lt;p&gt;큰 시각에서 봤을 때 오염 분석은 세 가지 요소를 정의하는 과정으로 출발합니다. 먼저 &lt;strong&gt;Taint Source&lt;/strong&gt;를 설정하고, &lt;strong&gt;Taint Sink&lt;/strong&gt;를 정의한 후 &lt;strong&gt;Taint Propagation&lt;/strong&gt;를 추적합니다. &lt;/p&gt;
 &lt;p&gt;(실제 DTA툴 개발 시, 개발자는 앞 두 가지만 정의하면 됩니다. &lt;strong&gt;Taint Progatation&lt;/strong&gt;은 통상적으로 라이브러리가 지원해 줍니다.)&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;Detecting_FSB_with_DTA%5CUntitled%201.png&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1126px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 27.666666666666668%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAGCAYAAADDl76dAAAACXBIWXMAABcRAAAXEQHKJvM/AAABDElEQVQY013Q30oCQRQG8CMYum2Qf9qQ1UIJCUKiEgMvqivve4OeSqyuZsHd2NnZHa0gehDBJ+g17DvrQRYvfpxlZvbM+Yai+byUaU1Qh2u4EjdwB5dZklBue465MIYRDKWOrdaPFChFn2lK0uRJDrAHcQ8H0qh4Oa/fihEuzCsppbxva/mHdmGCHZskDmpjb/0UzsCX2vsJw6p9fyOe8OUjDGsLY1rL7aRHcAEtOMkja92RKTlqGZdwwyY4X0HgzlYr528yaW9qjSE3fMY71vOGxnDDMhzyYYnoy3N48u3t3hZsHPeNtf3f6XSwIXIpjiKOVcHmOceRKYs47vHemi8pulJ7aZZ1X9fr6j/7GflcmsEM9AAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/9e5f515b988e02e5e5e1599817c554c3/b94e3/Untitled1.png&quot;
+        srcset=&quot;/static/9e5f515b988e02e5e5e1599817c554c3/5a46d/Untitled1.png 300w,
+/static/9e5f515b988e02e5e5e1599817c554c3/0a47e/Untitled1.png 600w,
+/static/9e5f515b988e02e5e5e1599817c554c3/b94e3/Untitled1.png 1126w&quot;
+        sizes=&quot;(max-width: 1126px) 100vw, 1126px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;용어 설명 전, 이해를 돕기 위해 아주 쉬운 예시 상황을 설정하겠습니다.&lt;/p&gt;
 &lt;p&gt;서버와 클라이언트가 send와 recv함수를 사용해 통신합니다. 이때 사용자가 악의적으로 버퍼오버플로우를 일으켜 exec_buf 값을 수정하여 원하는 명령어를 실행할 수 있습니다.&lt;/p&gt;
 &lt;p&gt;위와 같은 상황을 탐지하기 위해서는 각 요소를 어떻게 설정해야 할까여??&lt;/p&gt;
@@ -62,14 +82,54 @@
 &lt;ul&gt;
 &lt;li&gt;MOV&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&quot;Detecting_FSB_with_DTA%5CUntitled%202.png&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 943px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 9.333333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAACCAYAAABYBvyLAAAACXBIWXMAABcRAAAXEQHKJvM/AAAAn0lEQVQI12MoLSjgAmK2lvp6FgYgePbsmdC5M2csz589a3n/3j2xs6dPMyyYM4dt/uzZ6jOmTDEFshX////PsHLFCsY5CxcyLpo3j2fWtGmGUDkJBqBhKkAs0dLQIAg0j+nF8+eer16+3PLm9estjx4+jAYZuHThQpllixYtXL5o0WYg3QkycN2aNWw9M2cyLZ4/3xIotgmINy9ZsCADAJPIVYkoBm14AAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/f6f347b91d3bef87d0c96e179ab2cfd6/146da/Untitled2.png&quot;
+        srcset=&quot;/static/f6f347b91d3bef87d0c96e179ab2cfd6/5a46d/Untitled2.png 300w,
+/static/f6f347b91d3bef87d0c96e179ab2cfd6/0a47e/Untitled2.png 600w,
+/static/f6f347b91d3bef87d0c96e179ab2cfd6/146da/Untitled2.png 943w&quot;
+        sizes=&quot;(max-width: 943px) 100vw, 943px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;mov 같은 단순한 연상의 경우 전파되는 규칙이 명확합니다.&lt;/p&gt;
 &lt;p&gt;결과값은 단순히 T의 복사본이기 때문에 A역시 오염된 메모리 T의 오염 정보를 그대로 전수받습니다.&lt;/p&gt;
 &lt;p&gt;결과적으로 이 경우에 Taint merge operation은 &lt;code class=&quot;language-text&quot;&gt;:=&lt;/code&gt; 입니다.(그냥 단순 할당)&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;XOR&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&quot;Detecting_FSB_with_DTA%5CUntitled%203.png&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 943px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 9.333333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAACCAYAAABYBvyLAAAACXBIWXMAABcRAAAXEQHKJvM/AAAAn0lEQVQI12MoLSjgBGK2+qoqpv///zMsnj9faM6MGeZzZ8wwWzhnjvjCuXMZZk+fzjZ/9mz1GVOmmC6YM0cRpG7Pnj2Mjo6OjA/u3+c5f+6cIQjfuX1bggFomDIQS9RVVvKAFC5duNBz2aJFm5cvXrwZaHg0EDMADZEBii1cDhQH0p0gdcePH2djYGBgevL4seXrV682vXn9euPTJ08yAAl7V9lZfIa3AAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/05ba024d4ed6d3e92fe6316b11221726/146da/Untitled3.png&quot;
+        srcset=&quot;/static/05ba024d4ed6d3e92fe6316b11221726/5a46d/Untitled3.png 300w,
+/static/05ba024d4ed6d3e92fe6316b11221726/0a47e/Untitled3.png 600w,
+/static/05ba024d4ed6d3e92fe6316b11221726/146da/Untitled3.png 943w&quot;
+        sizes=&quot;(max-width: 943px) 100vw, 943px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;피연산자가 자기 자신과 동일한 값으로 연산을 수행하는 특수한 xor 연산 상황을 예시로 들겠습니다.&lt;/p&gt;
 &lt;p&gt;이 경우 항상 결과는 0이 됩니다.&lt;/p&gt;
 &lt;p&gt;따라서 공격자가 아무리 T 값을 조작하려고 해도 결과값에 대해서 아무런 변화를 줄 수가 없게 되겠쬬?&lt;/p&gt;
@@ -77,7 +137,27 @@
 &lt;ul&gt;
 &lt;li&gt;SHL&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&quot;Detecting_FSB_with_DTA%5CUntitled%204.png&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 943px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 9.333333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAACCAYAAABYBvyLAAAACXBIWXMAABcRAAAXEQHKJvM/AAAApklEQVQI12MoLSjgAGLWlvp6lv///zO8eP5c8NyZM5bnz561fHD/vtjDBw8YgGy227duqR89fNh01fLliiB1W7duZZyzcCHjonnzeGZNm2Y4Y8oU0wVz5kgwAA2TB2JhoIGCIIUvX7zwfPXy5ZY3r19vefzoUTQQM9y6eVPm9atXC589fbp50/r1nSB1+/buZeuZOZNp8fz5lssWLdoExJuXLFiQAQCar2CzJj70WAAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/f3d5d52470c3c25b9b9bf32712006881/146da/Untitled4.png&quot;
+        srcset=&quot;/static/f3d5d52470c3c25b9b9bf32712006881/5a46d/Untitled4.png 300w,
+/static/f3d5d52470c3c25b9b9bf32712006881/0a47e/Untitled4.png 600w,
+/static/f3d5d52470c3c25b9b9bf32712006881/146da/Untitled4.png 943w&quot;
+        sizes=&quot;(max-width: 943px) 100vw, 943px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;변수 T값만큼 A값을 시프트하는 상황입니다. 이러한 경우 T가 한 바이트만 오염되어 있어도 A의 모든 바이트에 영향을 미칠 수 있습니다.&lt;/p&gt;
 &lt;p&gt;결과적으로 A의 모든 부분에 오염이 전파됩니다.&lt;/p&gt;
 &lt;p&gt;이 경우 오염 정책의 Taint merge operation은 &lt;code class=&quot;language-text&quot;&gt;:=&lt;/code&gt; 가 됩니다.&lt;/p&gt;
@@ -86,7 +166,28 @@
 &lt;span class=&quot;token keyword&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;taint&lt;span class=&quot;token operator&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; var&lt;span class=&quot;token operator&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;token comment&quot;&gt;# taint는 오염된 변수를 의미합니다.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;코드를 보면 공격자가 taint 변수를 통해 var 값을 변조하는 것을 확인할 수 있습니다. &lt;/p&gt;
 &lt;p&gt;gcc로 빌드 후 해당 부분의 명령어를 확인해 보면 아래와 같습니다. &lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;Detecting_FSB_with_DTA%5CUntitled%205.png&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1200px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 14.333333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAADCAYAAACTWi8uAAAACXBIWXMAABcRAAAXEQHKJvM/AAAAxUlEQVQI1yWOS26DMAAFs6KJMQRsPjJ2+GQTatNEIdBGuUCXvUDvf40pUhdvMxqN3q67twxLj/UNzluabapMcG2Ecj1mWjg/Jr5/Bn5fliUrkLEkTSXhJvC3A8ZU5LlCCMFunVee65PwHpj8xEe4osuM5hSRuw5znemHC6/M8pVobG04yIRECh6V4F7u6U6OprH/wXmeWdaFcRzxweN9QOkjtouozcD58klRVNRbQKUJx+1JK1PqdHP2Me5NoDemtCaOY/4Akh1QF7AfcdYAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/80986295c1467e35cd4aa52766bb4cf1/c1b63/Untitled5.png&quot;
+        srcset=&quot;/static/80986295c1467e35cd4aa52766bb4cf1/5a46d/Untitled5.png 300w,
+/static/80986295c1467e35cd4aa52766bb4cf1/0a47e/Untitled5.png 600w,
+/static/80986295c1467e35cd4aa52766bb4cf1/c1b63/Untitled5.png 1200w,
+/static/80986295c1467e35cd4aa52766bb4cf1/252a4/Untitled5.png 1314w&quot;
+        sizes=&quot;(max-width: 1200px) 100vw, 1200px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;두 변수 간의 묵시적인 데이터 흐름이 발생하지 않는 것이 확인됩니다.&lt;/p&gt;
 &lt;p&gt;결국 DTA는 taint 변수 값이 오염된 상황이지만 var 값은 오염되지 않은 것으로 판단하고 이 결과 과소 오염으로 진단하게 됩니다.&lt;/p&gt;
 &lt;h1 id=&quot;3-libdft64-설치-및-사용-방법&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#3-libdft64-%EC%84%A4%EC%B9%98-%EB%B0%8F-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95&quot; aria-label=&quot;3 libdft64 설치 및 사용 방법 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;3. LIBDFT64 설치 및 사용 방법&lt;/h1&gt;
@@ -104,7 +205,27 @@
 
 &lt;span class=&quot;token function&quot;&gt;make&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;h2 id=&quot;b-libdft64-내부-구조&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#b-libdft64-%EB%82%B4%EB%B6%80-%EA%B5%AC%EC%A1%B0&quot; aria-label=&quot;b libdft64 내부 구조 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;B. LIBDFT64 내부 구조&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&quot;Detecting_FSB_with_DTA%5CUntitled%206.png&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 693px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 80.66666666666666%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAQCAIAAACZeshMAAAACXBIWXMAAAsTAAALEwEAmpwYAAACcUlEQVQoz02SC1eqUBCF+f//xNsqrVRuD81XD11mWokJ4gMDgQRNLRVT73fAu+6dtWDNGWbP7L050nQ6nUexWHhjz7FFTCaTWRifn5+WZZFQse2R67qz2aGdT5Lneev1+vv7OwiCrq7X6/V2u8233W5HZbMJer3egrneuNVqaapGvlwuV6sVQIkEJGeqjuNQBfLx8WEMh65ziKiBWePxGBbkX19fdEqLxZyMM/whvJjPaVWU5t3d3XOj/lirqapGhbb5fDYajWArstkMlGQYg9fXl2azuQkjCGO73e72e477/R7djUZjYBgI2f4NcpZJDFPbqqZ1DMOAIfNcx/UnU4yAGEesKhaLuXw+l8vd399nMpm3tzfTNGkW4FqtVi6XAb+/v1um+fzywrd+v08T4tF5dHQUi8VOTk6Oj49jsV/kmWwWjRID6NN1ndaHhwdFUaggjDc+Yyng07OzeDwuy/J5MplIJMjz+TxbBXg4HLKTN8hutwvbn58fBKONKeBLpRLdt7e3pVLx5iYLc/iLzTydTgfamqaxCv9UVWXYkGwwgPZqteSIKJMNpokLmI8jMJIc1xkM+tQ50MG/hX+1+thSlF6vj9tsTqfT52GkZblSLqMOmw6bGc8kMdey8Ic7iAv1p6dqtcpXz/fTqRRIpCZTKThfX18XCoWDZgEOAvFXfB8kl9m2xcUyTSvSnBQ+xROnGHeavRGBfgFmNgBuGIJRq+vdkW1bpuWFFCLw5eWlLKfhfHHxO5sVhvHn/4EjbwmmUMWqp5B2dB8BQPXq6opXoQCwWKlUDv8ZsO/7bIjeVDAvusAguWGj/8IKgwSxfwB4w0wdwYER8AAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/f4306b6874986bfb26dc8fbae3c5accf/61c63/Untitled6.png&quot;
+        srcset=&quot;/static/f4306b6874986bfb26dc8fbae3c5accf/5a46d/Untitled6.png 300w,
+/static/f4306b6874986bfb26dc8fbae3c5accf/0a47e/Untitled6.png 600w,
+/static/f4306b6874986bfb26dc8fbae3c5accf/61c63/Untitled6.png 693w&quot;
+        sizes=&quot;(max-width: 693px) 100vw, 693px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Tagmap: DTA 시스템을 위해 마련되는 가상 메모리 공간입니다. 즉, 메모리 공간의 오염 정보 상태를 기록하는 곳입니다.
 (DTA 에서는 이런 공간을 SHADOW MEMORY라고 부르지만, LIBDFT에서는 TAGMAP 이라는 이름을 사용합니다.)&lt;/li&gt;
@@ -116,10 +237,10 @@
 &lt;ul&gt;
 &lt;li&gt;tagmap_setb() : 특정 메모리 바이트를 오염된 것으로 표시합니다.&lt;/li&gt;
 &lt;li&gt;tagmap_getb() : 특정 메모리 바이트의 오염 여부를 확인합니다.&lt;/li&gt;
-&lt;li&gt;syscall&lt;em&gt;set&lt;/em&gt;pre() 시스템 콜 발생에 대한 사전 콜백을 등록합니다.&lt;/li&gt;
-&lt;li&gt;syscall&lt;em&gt;set&lt;/em&gt;post() : 시스템 콜 발생에 대한 사후 콜백을 등록합니다.&lt;/li&gt;
+&lt;li&gt;syscall&lt;strong&gt;set&lt;/strong&gt;pre() 시스템 콜 발생에 대한 사전 콜백을 등록합니다.&lt;/li&gt;
+&lt;li&gt;syscall&lt;strong&gt;set&lt;/strong&gt;post() : 시스템 콜 발생에 대한 사후 콜백을 등록합니다.&lt;/li&gt;
 &lt;li&gt;&lt;u&gt;syscall_desc&lt;/u&gt; : 시스템 콜 콜백들을 저장하기 위한 배열입니다.&lt;/li&gt;
-&lt;li&gt;ins&lt;em&gt;set&lt;/em&gt;pre/post() : 명령어에 대한 사전/사후 콜백을 등록합니다.&lt;/li&gt;
+&lt;li&gt;ins&lt;strong&gt;set&lt;/strong&gt;pre/post() : 명령어에 대한 사전/사후 콜백을 등록합니다.&lt;/li&gt;
 &lt;li&gt;&lt;u&gt;ins_desc&lt;/u&gt; : 명령어 콜백들을 저장하기 위한 배열입니다.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;참고로 밑줄 친 두 개의 배열은 &lt;code class=&quot;language-text&quot;&gt;extern&lt;/code&gt;으로 선언해 주어야 합니다. &lt;/p&gt;
@@ -187,7 +308,27 @@
 &lt;p&gt;PLT 주소를 알아내기 위해 DTA 툴에서 분석 대상 ELF의 섹션 정보를 파싱하는데 &lt;/p&gt;
 &lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;fcf-protection&lt;/code&gt;이 활성화되어 있으면, 빌드 후 바이너리 내에서 &lt;code class=&quot;language-text&quot;&gt;.plt&lt;/code&gt; 섹션을 사용하지 않고 &lt;code class=&quot;language-text&quot;&gt;.plt.sec&lt;/code&gt; 섹션을 사용합니다.&lt;/p&gt;
 &lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;.plt.sec&lt;/code&gt; 섹션의 코드는 다음과 같은 &lt;code class=&quot;language-text&quot;&gt;endbr64&lt;/code&gt; 명령어로 시작합니다. &lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;Detecting_FSB_with_DTA%5CUntitled%207.png&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 919px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 5%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAABCAYAAADeko4lAAAACXBIWXMAAAsTAAALEwEAmpwYAAAASklEQVQI1w3LOxKAIAxAQXsIw2Siw0eijbR6/8s9Kbbczdy4PkeyoEXxd9BnJ0kihLBEYgzcU2iPk+vA2okehbo7qoaJ4DGR1/kB4XsY8JMX79sAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/941bb0f3cf98cfff8ad19c3bd73f58bb/6295b/Untitled7.png&quot;
+        srcset=&quot;/static/941bb0f3cf98cfff8ad19c3bd73f58bb/5a46d/Untitled7.png 300w,
+/static/941bb0f3cf98cfff8ad19c3bd73f58bb/0a47e/Untitled7.png 600w,
+/static/941bb0f3cf98cfff8ad19c3bd73f58bb/6295b/Untitled7.png 919w&quot;
+        sizes=&quot;(max-width: 919px) 100vw, 919px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;안타깝게도 pin tools의 elf 파싱 로직이 저 부분을 해석하지 못합니다.. &lt;/p&gt;
 &lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;fcf-protection&lt;/code&gt; 보안 기법에 대한 설명은 추후 추가하겠습니다. &lt;/p&gt;
 &lt;h2 id=&quot;c-dta-툴-작성&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#c-dta-%ED%88%B4-%EC%9E%91%EC%84%B1&quot; aria-label=&quot;c dta 툴 작성 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;C. DTA 툴 작성&lt;/h2&gt;
@@ -290,7 +431,27 @@
 &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;h2 id=&quot;d-결과&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#d-%EA%B2%B0%EA%B3%BC&quot; aria-label=&quot;d 결과 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;D. 결과&lt;/h2&gt;
 &lt;p&gt;최종 실행 시, 다음과 같이 정상 동작하는 것을 확인할 수 있습니다.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;Detecting_FSB_with_DTA%5CUntitled%208.png&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1014px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 26.333333333333336%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAFCAIAAADKYVtkAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAnElEQVQY022PzRLCIAyEe7aWlgD9wUolVKEHff/Hc01nPPFx2Ul2M0uTPznksOXg2W+c9tc7xNcjHbwfMca74L0fBa21c26apnmeiagpuSROTzxOibmUvK43Y2gcHdZGGIbhWqMxVvbWkCHSPzfOX4S2bf+iHl6W5TyPMiiGhtBodXbDBAZU6LquEsYfziSEtdYJcCul+r5XQjUJvvfuF1aDGdZsAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/8fe3b0112491f8013b9d982e0adf07e9/d7ab4/Untitled8.png&quot;
+        srcset=&quot;/static/8fe3b0112491f8013b9d982e0adf07e9/5a46d/Untitled8.png 300w,
+/static/8fe3b0112491f8013b9d982e0adf07e9/0a47e/Untitled8.png 600w,
+/static/8fe3b0112491f8013b9d982e0adf07e9/d7ab4/Untitled8.png 1014w&quot;
+        sizes=&quot;(max-width: 1014px) 100vw, 1014px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
 &lt;h1 id=&quot;5-참고&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#5-%EC%B0%B8%EA%B3%A0&quot; aria-label=&quot;5 참고 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;5. 참고&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.google.com/search?q=libdft&amp;#x26;oq=libdft&amp;#x26;aqs=chrome..69i57j69i59l2j69i60l3.3035j0j7&amp;#x26;sourceid=chrome&amp;#x26;ie=UTF-8&quot;&gt;https://www.google.com/search?q=libdft&amp;#x26;oq=libdft&amp;#x26;aqs=chrome..69i57j69i59l2j69i60l3.3035j0j7&amp;#x26;sourceid=chrome&amp;#x26;ie=UTF-8&lt;/a&gt;&lt;/li&gt;
