@@ -303,10 +303,10 @@
 <ul>
 <li>tagmap_setb() : 특정 메모리 바이트를 오염된 것으로 표시합니다.</li>
 <li>tagmap_getb() : 특정 메모리 바이트의 오염 여부를 확인합니다.</li>
-<li>syscall<strong>set</strong>pre() 시스템 콜 발생에 대한 사전 콜백을 등록합니다.</li>
-<li>syscall<strong>set</strong>post() : 시스템 콜 발생에 대한 사후 콜백을 등록합니다.</li>
+<li>syscall_set _pre() 시스템 콜 발생에 대한 사전 콜백을 등록합니다.</li>
+<li>syscall_set _post() : 시스템 콜 발생에 대한 사후 콜백을 등록합니다.</li>
 <li><u>syscall_desc</u> : 시스템 콜 콜백들을 저장하기 위한 배열입니다.</li>
-<li>ins<strong>set</strong>pre/post() : 명령어에 대한 사전/사후 콜백을 등록합니다.</li>
+<li>ins_set _pre/post() : 명령어에 대한 사전/사후 콜백을 등록합니다.</li>
 <li><u>ins_desc</u> : 명령어 콜백들을 저장하기 위한 배열입니다.</li>
 </ul>
 <p>참고로 밑줄 친 두 개의 배열은 <code class="language-text">extern</code>으로 선언해 주어야 합니다. </p>
