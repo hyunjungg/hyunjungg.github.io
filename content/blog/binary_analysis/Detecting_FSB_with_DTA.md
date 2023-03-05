@@ -1,5 +1,5 @@
 ---
-title: 'Detecting Format String Bugs with Libdft'
+title: 'Detecting Format String Bugs with Libdft64'
 date: 2023-03-05 16:58:13
 category: 'binary_analysis'
 draft: false
@@ -46,7 +46,7 @@ DTA도 퍼징처럼 소프트웨어 취약점을 이용해서 나타날 수 있�
 
 (실제 DTA툴 개발 시, 개발자는 앞 두 가지만 정의하면 됩니다. **Taint Progatation**은 통상적으로 라이브러리가 지원해 줍니다.)
 
-![Untitled](Detecting_FSB_with_DTA\Untitled%201.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled1.png)
 
 용어 설명 전, 이해를 돕기 위해 아주 쉬운 예시 상황을 설정하겠습니다.
 
@@ -82,7 +82,7 @@ DTA 시스템에서 오염이 전파되는 기준에 대한 정의입니다.  �
 
 - MOV
 
-![Untitled](Detecting_FSB_with_DTA\Untitled%202.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled2.png)
 
 mov 같은 단순한 연상의 경우 전파되는 규칙이 명확합니다.
 
@@ -92,7 +92,7 @@ mov 같은 단순한 연상의 경우 전파되는 규칙이 명확합니다.
 
 - XOR
 
-![Untitled](Detecting_FSB_with_DTA\Untitled%203.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled3.png)
 
 피연산자가 자기 자신과 동일한 값으로 연산을 수행하는 특수한 xor 연산 상황을 예시로 들겠습니다.
 
@@ -104,7 +104,7 @@ mov 같은 단순한 연상의 경우 전파되는 규칙이 명확합니다.
 
 - SHL
 
-![Untitled](Detecting_FSB_with_DTA\Untitled%204.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled4.png)
 
 변수 T값만큼 A값을 시프트하는 상황입니다. 이러한 경우 T가 한 바이트만 오염되어 있어도 A의 모든 바이트에 영향을 미칠 수 있습니다.
 
@@ -123,7 +123,7 @@ while(taint--) var++; # taint는 오염된 변수를 의미합니다.
 
 gcc로 빌드 후 해당 부분의 명령어를 확인해 보면 아래와 같습니다. 
 
-![Untitled](Detecting_FSB_with_DTA\Untitled%205.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled5.png)
 
 두 변수 간의 묵시적인 데이터 흐름이 발생하지 않는 것이 확인됩니다.
 
@@ -152,7 +152,7 @@ make
 
 ## B. LIBDFT64 내부 구조
 
-![Untitled](Detecting_FSB_with_DTA\Untitled%206.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled6.png)
 
 - Tagmap: DTA 시스템을 위해 마련되는 가상 메모리 공간입니다. 즉, 메모리 공간의 오염 정보 상태를 기록하는 곳입니다. 
 (DTA 에서는 이런 공간을 SHADOW MEMORY라고 부르지만, LIBDFT에서는 TAGMAP 이라는 이름을 사용합니다.)
@@ -165,10 +165,10 @@ make
 
 - tagmap_setb() : 특정 메모리 바이트를 오염된 것으로 표시합니다.
 - tagmap_getb() : 특정 메모리 바이트의 오염 여부를 확인합니다.
-- syscall_set_pre() 시스템 콜 발생에 대한 사전 콜백을 등록합니다.
-- syscall_set_post() : 시스템 콜 발생에 대한 사후 콜백을 등록합니다.
+- syscall__set__pre() 시스템 콜 발생에 대한 사전 콜백을 등록합니다.
+- syscall__set__post() : 시스템 콜 발생에 대한 사후 콜백을 등록합니다.
 - <u>syscall_desc</u> : 시스템 콜 콜백들을 저장하기 위한 배열입니다.
-- ins_set_pre/post() : 명령어에 대한 사전/사후 콜백을 등록합니다.
+- ins__set__pre/post() : 명령어에 대한 사전/사후 콜백을 등록합니다.
 - <u>ins_desc</u> : 명령어 콜백들을 저장하기 위한 배열입니다.
 
 참고로 밑줄 친 두 개의 배열은 `extern`으로 선언해 주어야 합니다. 
@@ -258,7 +258,7 @@ PLT 주소를 알아내기 위해 DTA 툴에서 분석 대상 ELF의 섹션 정�
 
 `.plt.sec` 섹션의 코드는 다음과 같은 `endbr64` 명령어로 시작합니다. 
 
-![Untitled](Detecting_FSB_with_DTA\Untitled%207.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled7.png)
 
 안타깝게도 pin tools의 elf 파싱 로직이 저 부분을 해석하지 못합니다.. 
 
@@ -378,7 +378,7 @@ check_string_taint(CONTEXT *ctxt, ADDRINT ip, ADDRINT target){
 
 최종 실행 시, 다음과 같이 정상 동작하는 것을 확인할 수 있습니다.
 
-![Untitled](Detecting_FSB_with_DTA\Untitled%208.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled8.png)
 
 # 5. 참고 
 
