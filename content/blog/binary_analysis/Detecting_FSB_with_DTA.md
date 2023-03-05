@@ -5,24 +5,16 @@ category: 'binary_analysis'
 draft: false
 ---
 
-# Detecting Format String Bug using libdft64
 
 
 본 글에서는 DTA라이브러리인 LIBDFT64를 사용하는 방법을 간단한 예제와 함께 설명합니다. 
 
-**목차**
-
-[TOC]
-
-
-
 # 1. LIBDFT64?
 
----
 
-![[https://github.com/AngoraFuzzer/libdft64](https://github.com/AngoraFuzzer/libdft64)](Detecting_FSB_with_DTA/Untitled.png)
+![[https://github.com/AngoraFuzzer/libdft64](https://github.com/AngoraFuzzer/libdft64)](Detecting_FSB_with_DTA\Untitled.png)
 
-기존에 많이 알려져 있는 [libdft](https://www.cs.columbia.edu/~vpk/research/libdft/)는 32비트 바이너리만 지원하는데, 리서치 도중 64비트 호환이 가능하게 프로젝트를 진행해 주신 분이 계셔서 사용해 보았습니다.!
+기존에 많이 알려져 있는 [libdft](https://www.cs.columbia.edu/~vpk/research/libdft/)는 32비트 바이너리만 지원하는데, 리서치 도중 64비트 호환이 가능하게 [libdft64](https://github.com/AngoraFuzzer/libdft64) 프로젝트를 진행해 주신 분이 계셔서 사용해 보았습니다.!
 
 Libdft는 인텔의 Pin을 기반으로 작성된 DTA 라이브러리 입니다. 현재 알려진 DTA 라이브러리 중 가장 많이 사용되고 있습니다.
 
@@ -30,7 +22,6 @@ MMX나 SSE와 같은 확장 명령어는 지원하고 있지 않으므로, 분�
 
 # 2. DTA?
 
----
 
 ## A. DTA란 무엇인가?
 
@@ -55,7 +46,7 @@ DTA도 퍼징처럼 소프트웨어 취약점을 이용해서 나타날 수 있�
 
 (실제 DTA툴 개발 시, 개발자는 앞 두 가지만 정의하면 됩니다. **Taint Progatation**은 통상적으로 라이브러리가 지원해 줍니다.)
 
-![Untitled](Detecting_FSB_with_DTA/Untitled%201.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled%201.png)
 
 용어 설명 전, 이해를 돕기 위해 아주 쉬운 예시 상황을 설정하겠습니다.
 
@@ -91,7 +82,7 @@ DTA 시스템에서 오염이 전파되는 기준에 대한 정의입니다.  �
 
 - MOV
 
-![Untitled](Detecting_FSB_with_DTA/Untitled%202.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled%202.png)
 
 mov 같은 단순한 연상의 경우 전파되는 규칙이 명확합니다.
 
@@ -101,7 +92,7 @@ mov 같은 단순한 연상의 경우 전파되는 규칙이 명확합니다.
 
 - XOR
 
-![Untitled](Detecting_FSB_with_DTA/Untitled%203.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled%203.png)
 
 피연산자가 자기 자신과 동일한 값으로 연산을 수행하는 특수한 xor 연산 상황을 예시로 들겠습니다.
 
@@ -113,7 +104,7 @@ mov 같은 단순한 연상의 경우 전파되는 규칙이 명확합니다.
 
 - SHL
 
-![Untitled](Detecting_FSB_with_DTA/Untitled%204.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled%204.png)
 
 변수 T값만큼 A값을 시프트하는 상황입니다. 이러한 경우 T가 한 바이트만 오염되어 있어도 A의 모든 바이트에 영향을 미칠 수 있습니다.
 
@@ -132,15 +123,13 @@ while(taint--) var++; # taint는 오염된 변수를 의미합니다.
 
 gcc로 빌드 후 해당 부분의 명령어를 확인해 보면 아래와 같습니다. 
 
-![Untitled](Detecting_FSB_with_DTA/Untitled%205.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled%205.png)
 
 두 변수 간의 묵시적인 데이터 흐름이 발생하지 않는 것이 확인됩니다.
 
 결국 DTA는 taint 변수 값이 오염된 상황이지만 var 값은 오염되지 않은 것으로 판단하고 이 결과 과소 오염으로 진단하게 됩니다.
 
 # 3. LIBDFT64 설치 및 사용 방법
-
----
 
 ## A. 설치
 
@@ -163,7 +152,7 @@ make
 
 ## B. LIBDFT64 내부 구조
 
-![Untitled](Detecting_FSB_with_DTA/Untitled%206.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled%206.png)
 
 - Tagmap: DTA 시스템을 위해 마련되는 가상 메모리 공간입니다. 즉, 메모리 공간의 오염 정보 상태를 기록하는 곳입니다. 
 (DTA 에서는 이런 공간을 SHADOW MEMORY라고 부르지만, LIBDFT에서는 TAGMAP 이라는 이름을 사용합니다.)
@@ -211,8 +200,6 @@ make
     
 
 # 4. LIBDFT64로 Format String Bug 탐지
-
----
 
 ## A. Format String Bug 탐지 방안
 
@@ -271,7 +258,7 @@ PLT 주소를 알아내기 위해 DTA 툴에서 분석 대상 ELF의 섹션 정�
 
 `.plt.sec` 섹션의 코드는 다음과 같은 `endbr64` 명령어로 시작합니다. 
 
-![Untitled](Detecting_FSB_with_DTA/Untitled%207.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled%207.png)
 
 안타깝게도 pin tools의 elf 파싱 로직이 저 부분을 해석하지 못합니다.. 
 
@@ -391,11 +378,10 @@ check_string_taint(CONTEXT *ctxt, ADDRINT ip, ADDRINT target){
 
 최종 실행 시, 다음과 같이 정상 동작하는 것을 확인할 수 있습니다.
 
-![Untitled](Detecting_FSB_with_DTA/Untitled%208.png)
+![Untitled](Detecting_FSB_with_DTA\Untitled%208.png)
 
 # 5. 참고 
 
-------
 
 * https://www.google.com/search?q=libdft&oq=libdft&aqs=chrome..69i57j69i59l2j69i60l3.3035j0j7&sourceid=chrome&ie=UTF-8
 
