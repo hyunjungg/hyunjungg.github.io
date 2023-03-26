@@ -571,7 +571,7 @@ docker run --name apt37_server -d -p <span class="token number">80</span>:80 -v 
     </span></p>
 <p>우선 Target System 에서 Winlogbeat를 통해 Sysmon데이터를 수집합니다. <strong>ElastAlert에서 1차 탐지를 한 후 celery_app에서 2차 탐지를 수행하는 구조로 개발 중입니다.</strong></p>
 <p>2차 탐지까지 진행되면 그래프 DB인 NEO4J에서 프로세스 관계를 시각화하고, 그중 악성 프로세스를 식별하여 화면에 표시함으로써 위협 정보를 가시화하는 것을 최종 목표로 하고 있습니다.</p>
-<p>하지만 앞서 언급 드렸듯이 아직 구현이 덜 된 부분이 있기 때문에,  2차 탐지 로직을 Jupyter Notebook을 통한 구현으로 대체하였습니다.ㅎㅎ </p>
+<p>하지만 앞서 언급 드렸듯이 아직 구현이 덜 된 부분이 있기 때문에,  2차 탐지 로직을 Jupyter Notebook을 통한 구현으로 대체하였습니다…</p>
 <p>탐지 플랫폼 구축이 완료되는 대로 본 글을 수정할 예정이며, Jupyter Notebook을 통해 임시로 구축한 파이프라인은 다음과 같습니다.</p>
 <p><span
       class="gatsby-resp-image-wrapper"
@@ -792,10 +792,10 @@ docker run --name apt37_server -d -p <span class="token number">80</span>:80 -v 
         loading="lazy"
       />
     </span></p>
-<h3 id="2-analyze-processes-with-rules" style="position:relative;"><a href="#2-analyze-processes-with-rules" aria-label="2 analyze processes with rules permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>(2) *<strong>*Analyze processes with rules**</strong></h3>
+<h3 id="2-analyze-processes-with-rules" style="position:relative;"><a href="#2-analyze-processes-with-rules" aria-label="2 analyze processes with rules permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>(2) Analyze processes with rules</h3>
 <p>ElastAlert에 의해 1차 탐지된 프로세스들을 대상으로 2차 분석합니다. 단일 이벤트로는 분석이 불가능한 룰들을 작성합니다. 예를 들어 하나의 프로세스에서 네트워크 이벤트와 파일 이벤트의 수가 특정 threshold를 넘은 경우, 정보 탈취 행위로 간주할 수 있습니다.</p>
 <p>하지만 파일 업로드 프로그램 같은 경우에는 이런 룰이 오탐이 될 수 있기 때문에, Level을 HIGH가 아닌 MEDIUM이나 LOW로 설정해 주어야 합니다.</p>
-<h3 id="3-find-processes-related-to-malicious-process" style="position:relative;"><a href="#3-find-processes-related-to-malicious-process" aria-label="3 find processes related to malicious process permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>(3) *<strong>*Find processes related to malicious process**</strong></h3>
+<h3 id="3-find-processes-related-to-malicious-process" style="position:relative;"><a href="#3-find-processes-related-to-malicious-process" aria-label="3 find processes related to malicious process permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>(3) Find processes related to malicious process</h3>
 <p>ElastAlert에 의해 탐지된 모든 프로세스들을 대상으로 프로세스 트리를 생성합니다.  트리의 시작은 탐지된 프로세스가 아닌, 프로세스 트리의 ROOT가 될 수 있는 프로세스( e.g explorer.exe , svchost.exe)입니다. ROOT가 될 수 있는 프로세스들까지 트리에 포함 시킨 이유는 침입 경로 확인을 위한 분석에 도움이 되기 때문입니다.</p>
 <p>Windows System에는 정말 많은 svchost.exe 가 존재하기 때문에, ROOT 프로세스를 좀 더 명확히 구분하기 위한 Root_Handler 함수를 구현했습니다.</p>
 <p>이 함수에는 svchost.exe의 command line을 확인하여, svchost.exe 역할을 분류합니다.</p>
@@ -970,7 +970,7 @@ docker run --name apt37_server -d -p <span class="token number">80</span>:80 -v 
       />
     </span></p>
 <p>갈 길이 너무 많이 남았지만… 열심히 공부해서 목표를 이루겠습니다 ..</p>
-<p>오늘은 APT37 행위를 모사하여 직접 시뮬레이션을 하고, 위협을 탐지하는 방법에 대해서 포스팅을 해봤습니다. 내용이 너무 방대하다 보니 제대로 설명되지 않은 부분이 있는 것 같네여..  부족한 부분에 대해 피드백해 주시면 감사하겠습니다 ㅎㅎ</p>
+<p>오늘은 APT37 행위를 모사하여 직접 시뮬레이션을 하고, 위협을 탐지하는 방법에 대해서 포스팅을 해봤습니다. 내용이 너무 방대하다 보니 제대로 설명되지 않은 부분이 있는 것 같네여..  부족한 부분에 대해 피드백해 주시면 감사하겠습니다 </p>
 <h1 id="4-참고" style="position:relative;"><a href="#4-%EC%B0%B8%EA%B3%A0" aria-label="4 참고 permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>4. 참고</h1>
 <ul>
 <li><a href="https://www.notion.so/TTPs-9-f04ce99784874947978bd2947738ac92">KISA TTPS Report</a></li>
