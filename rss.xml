@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Hyunjung's Blog]]></title><description><![CDATA[보안과 개발을 좋아하는 학생입니다~^^]]></description><link>https://hyunjungg.github.io</link><generator>GatsbyJS</generator><lastBuildDate>Sun, 26 Mar 2023 11:37:11 GMT</lastBuildDate><item><title><![CDATA[Threat Hunting: Detecting APT37 TTPs]]></title><description><![CDATA[APT37은 최소 2012년부터 활동한 그룹으로 다양한 공격 방식을 사용해온 그룹입니다.  본 글에서는 APT37의 여러 위협 활동 중 최근(21년) 일어난 개인PC…]]></description><link>https://hyunjungg.github.io/threat_hunting/Threat_Hunting_Detecting_APT37_TTPs/</link><guid isPermaLink="false">https://hyunjungg.github.io/threat_hunting/Threat_Hunting_Detecting_APT37_TTPs/</guid><pubDate>Sun, 26 Mar 2023 16:58:13 GMT</pubDate><content:encoded>&lt;p&gt;APT37은 최소 2012년부터 활동한 그룹으로 다양한 공격 방식을 사용해온 그룹입니다. &lt;/p&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Hyunjung's Blog]]></title><description><![CDATA[보안과 개발을 좋아하는 학생입니다~^^]]></description><link>https://hyunjungg.github.io</link><generator>GatsbyJS</generator><lastBuildDate>Sun, 26 Mar 2023 15:37:18 GMT</lastBuildDate><item><title><![CDATA[Threat Hunting: Detecting APT37 TTPs]]></title><description><![CDATA[APT37은 최소 2012년부터 활동한 그룹으로 다양한 공격 방식을 사용해온 그룹입니다.  본 글에서는 APT37의 여러 위협 활동 중 최근(21년) 일어난 개인PC…]]></description><link>https://hyunjungg.github.io/threat_hunting/Threat_Hunting_Detecting_APT37_TTPs/</link><guid isPermaLink="false">https://hyunjungg.github.io/threat_hunting/Threat_Hunting_Detecting_APT37_TTPs/</guid><pubDate>Sun, 26 Mar 2023 16:58:13 GMT</pubDate><content:encoded>&lt;p&gt;APT37은 최소 2012년부터 활동한 그룹으로 다양한 공격 방식을 사용해온 그룹입니다. &lt;/p&gt;
 &lt;p&gt;본 글에서는 APT37의 여러 위협 활동 중 최근(21년) 일어난 개인PC를 타겟으로 정보를 탈취하는 행위에 사용한 공격방식을 시뮬레이션 하고 해당 위협을 탐지하는 방법에 대해 설명합니다. (APT37 그룹 고유의 위협 및 특징을 탐지하기보다는, 범용적인 TTP를 탐지하는 것에 목적을 두고 있습니다.)&lt;/p&gt;
 &lt;p&gt;악성코드 샘플을 수집하지 못한 관계로 오로지 APT37 분석 리포트들만을 참고하여 위협을 모사했습니다. 하지만 제가 임의로 특정 Technique을 추가하거나 제외한 부분도 있습니다. &lt;/p&gt;
 &lt;blockquote&gt;
@@ -796,27 +796,6 @@ docker run --name apt37_server -d -p &lt;span class=&quot;token number&quot;&gt;
     &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;&lt;span
       class=&quot;gatsby-resp-image-wrapper&quot;
-      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 842px; &quot;
-    &gt;
-      &lt;span
-    class=&quot;gatsby-resp-image-background-image&quot;
-    style=&quot;padding-bottom: 67.66666666666666%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAOCAYAAAAvxDzwAAAACXBIWXMAABcRAAAXEQHKJvM/AAACCklEQVQ4y5VTTW/aQBT0z80lv6aXqoec8w96qFpKGiEBahUQSpQEuQaMv9afawPG2J6+txhDgEufNFq0np19M2/RNpsNVqtVTcARWYMVNpLWLEMURfBNG8JxkWUZPvKP0ADUuFIV7QpPwJlMYZtLuJ4Hc/KG0BHXDzSlqcNVVVOhriu1KRMds/fPWK9T1GWNv7oOKSUSAnEVZ8+/hHbtlqKIkMZDhGGAKI6VxbhZOaKD4KFOf2vSC5BZPkLKaLfbcbvtxyAI4DhOK+L7PlLq8pBJne9QliUrqhhUh4kI8D5+VpbK5iYmxXG4J1OlaarEhRAwDAOu8PD8ewTnRYcI/GMEhwwd10VeFMAmh3x5hWmaamJZM10WTJIEy+USOuW5WCywpu/N7a2rNsM0kRB0wP/zhPmnL/Boovl2i4LQDE2teZ5jOqWp2zYkZSpJzLu9hXN3h2yvuBfkbtgyd3Reh8CZw92y0I7cOCSqz2ewHrooLQvVueCWumFrBVs/mxzblc0wuKuq2Zs8jWDpJmRjv7XM1gJXKLEoDFshHgp31T4VFux24YzHWBF3S/vS8lRkrSCTF8asNkevsJeWEtgSmZ9QSOKcG9eaeBY9IfvmBrP7e0Ts5OSJ8eWMi7+eynPhwjTm7TD+p7ThcIh+v1/z2uv10Ol08PD1G35+/4Ffj48YDAYfQbyLvRP8A0YGLdJMs9RKAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
-  &gt;&lt;/span&gt;
-  &lt;img
-        class=&quot;gatsby-resp-image-image&quot;
-        alt=&quot;Untitled&quot;
-        title=&quot;Untitled&quot;
-        src=&quot;/static/17d559193660725a612d0ced8a76b326/99072/Untitled22.png&quot;
-        srcset=&quot;/static/17d559193660725a612d0ced8a76b326/5a46d/Untitled22.png 300w,
-/static/17d559193660725a612d0ced8a76b326/0a47e/Untitled22.png 600w,
-/static/17d559193660725a612d0ced8a76b326/99072/Untitled22.png 842w&quot;
-        sizes=&quot;(max-width: 842px) 100vw, 842px&quot;
-        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
-        loading=&quot;lazy&quot;
-      /&gt;
-    &lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;span
-      class=&quot;gatsby-resp-image-wrapper&quot;
       style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 804px; &quot;
     &gt;
       &lt;span
@@ -904,7 +883,7 @@ docker run --name apt37_server -d -p &lt;span class=&quot;token number&quot;&gt;
       /&gt;
     &lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;갈 길이 너무 많이 남았지만… 열심히 공부해서 목표를 이루겠습니다 ..&lt;/p&gt;
-&lt;p&gt;오늘은 APT37 행위를 모사하여 직접 시뮬레이션을 하고, 위협을 탐지하는 방법에 대해서 포스팅을 해봤습니다. 내용이 너무 방대하다 보니 제대로 설명되지 않은 부분이 있는 것 같네여..  부족한 부분에 대해 피드백해 주시면 감사하겠습니다 &lt;/p&gt;
+&lt;p&gt;오늘은 APT37 행위를 모사하여 직접 시뮬레이션을 하고, 위협을 탐지하는 방법에 대해서 포스팅을 해봤습니다. 내용이 너무 방대하다 보니 제대로 설명되지 않은 부분이 있는 것 같네여..  부족한 부분에 대해 피드백해 주시면 감사하겠습니다.&lt;/p&gt;
 &lt;h1 id=&quot;4-참고&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#4-%EC%B0%B8%EA%B3%A0&quot; aria-label=&quot;4 참고 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;4. 참고&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.notion.so/TTPs-9-f04ce99784874947978bd2947738ac92&quot;&gt;KISA TTPS Report&lt;/a&gt;&lt;/li&gt;
