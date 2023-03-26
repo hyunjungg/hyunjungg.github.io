@@ -5,9 +5,33 @@ category: 'binary_analysis'
 draft: false
 ---
 
-
-
 본 글에서는 DTA라이브러리인 LIBDFT64를 사용하는 방법을 간단한 예제와 함께 설명합니다. 
+
+
+
+### TOC
+
+- [1. LIBDFT64?](#1-libdft64-)
+- [2. DTA?](#2-dta-)
+  * [A. DTA란 무엇인가?](#a-dta-------)
+  * [B. 퍼징과 다른 점?](#b----------)
+  * [C. DTA의 세 가지 요소](#c-dta---------)
+  * [D. Taint Policy](#d-taint-policy)
+  * [E. 한계..](#e---)
+- [3. LIBDFT64 설치 및 사용 방법](#3-libdft64-----------)
+  * [A. 설치](#a---)
+  * [B. LIBDFT64 내부 구조](#b-libdft64------)
+  * [C. LIBDFT64 API](#c-libdft64-api)
+  * [D. 빌드 방법](#d------)
+- [4. LIBDFT64로 Format String Bug 탐지](#4-libdft64--format-string-bug---)
+  * [A. Format String Bug 탐지 방안](#a-format-string-bug------)
+  * [B. 테스트 대상 프로그램 빌드 시 유의 사항](#b-----------------------)
+  * [C. DTA 툴 작성](#c-dta-----)
+  * [D. 결과](#d---)
+- [5. 참고](#5---)
+
+
+
 
 # 1. LIBDFT64?
 

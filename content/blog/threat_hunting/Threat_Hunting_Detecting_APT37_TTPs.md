@@ -1,7 +1,7 @@
 ---
 title: 'Threat Hunting: Detecting APT37 TTPs'
 date: 2023-03-26 16:58:13
-category: 'threat-hunting'
+category: 'threat_hunting'
 draft: false
 ---
 
