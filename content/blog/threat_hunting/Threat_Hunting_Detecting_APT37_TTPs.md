@@ -499,8 +499,6 @@ ROOT 프로세스 노드들은 노란색으로 별도 표시했습니다.
 
 ![Untitled](Threat_Hunting_Detecting_APT37_TTPs\Untitled21.png)
 
-![Untitled](Threat_Hunting_Detecting_APT37_TTPs\Untitled22.png)
-
 ![Untitled](Threat_Hunting_Detecting_APT37_TTPs\Untitled23.png)
 
 ![Untitled](Threat_Hunting_Detecting_APT37_TTPs\Untitled24.png)
@@ -515,7 +513,7 @@ ROOT 프로세스 노드들은 노란색으로 별도 표시했습니다.
 
 갈 길이 너무 많이 남았지만… 열심히 공부해서 목표를 이루겠습니다 ..
 
-오늘은 APT37 행위를 모사하여 직접 시뮬레이션을 하고, 위협을 탐지하는 방법에 대해서 포스팅을 해봤습니다. 내용이 너무 방대하다 보니 제대로 설명되지 않은 부분이 있는 것 같네여..  부족한 부분에 대해 피드백해 주시면 감사하겠습니다 
+오늘은 APT37 행위를 모사하여 직접 시뮬레이션을 하고, 위협을 탐지하는 방법에 대해서 포스팅을 해봤습니다. 내용이 너무 방대하다 보니 제대로 설명되지 않은 부분이 있는 것 같네여..  부족한 부분에 대해 피드백해 주시면 감사하겠습니다.
 
 # 4. 참고
 
