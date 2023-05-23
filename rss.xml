@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Hyunjung's Blog]]></title><description><![CDATA[보안과 개발을 좋아하는 학생입니다~^^]]></description><link>https://hyunjungg.github.io</link><generator>GatsbyJS</generator><lastBuildDate>Tue, 23 May 2023 06:46:33 GMT</lastBuildDate><item><title><![CDATA[Analyzing CVE-2023-21768: the LPE Vulnerability in Windows 11]]></title><description><![CDATA[이번 글에서는 Windows 11에서 동작하는 LPE취약점인 CVE-2023-21768에 대해 설명합니다.  TOC 1. CVE-2023-21768 2. Concepts A. I/O Ring (1) I/O Ring 기본 (2) The Role of I…]]></description><link>https://hyunjungg.github.io/exploit/Analyzing_CVE_2023_21768/</link><guid isPermaLink="false">https://hyunjungg.github.io/exploit/Analyzing_CVE_2023_21768/</guid><pubDate>Tue, 23 May 2023 15:23:13 GMT</pubDate><content:encoded>&lt;p&gt;이번 글에서는 Windows 11에서 동작하는 LPE취약점인 CVE-2023-21768에 대해 설명합니다. &lt;/p&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Hyunjung's Blog]]></title><description><![CDATA[보안과 개발을 좋아하는 학생입니다~^^]]></description><link>https://hyunjungg.github.io</link><generator>GatsbyJS</generator><lastBuildDate>Tue, 23 May 2023 06:55:45 GMT</lastBuildDate><item><title><![CDATA[Analyzing CVE-2023-21768: the LPE Vulnerability in Windows 11]]></title><description><![CDATA[이번 글에서는 Windows 11에서 동작하는 LPE취약점인 CVE-2023-21768에 대해 설명합니다.  TOC 1. CVE-2023-21768 2. Concepts A. I/O Ring (1) I/O Ring 기본 (2) The Role of I…]]></description><link>https://hyunjungg.github.io/exploit/Analyzing_CVE_2023_21768/</link><guid isPermaLink="false">https://hyunjungg.github.io/exploit/Analyzing_CVE_2023_21768/</guid><pubDate>Tue, 23 May 2023 15:23:13 GMT</pubDate><content:encoded>&lt;p&gt;이번 글에서는 Windows 11에서 동작하는 LPE취약점인 CVE-2023-21768에 대해 설명합니다. &lt;/p&gt;
 &lt;h3 id=&quot;toc&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#toc&quot; aria-label=&quot;toc permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;[TOC]&lt;/h3&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#1-cve-2023-21768&quot;&gt;1. CVE-2023-21768&lt;/a&gt;&lt;/li&gt;
@@ -33,21 +33,21 @@ I/O Ring은 여러 개의 I/O 작업을 I/O Ring 큐에 집어넣은 후 한꺼�
 &lt;p&gt;작업들이 큐잉된 Submission Queue의 예시 모습은 다음과 같습니다.&lt;/p&gt;
 &lt;p&gt;&lt;span
       class=&quot;gatsby-resp-image-wrapper&quot;
-      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 768px; &quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 770px; &quot;
     &gt;
       &lt;span
     class=&quot;gatsby-resp-image-background-image&quot;
-    style=&quot;padding-bottom: 61.33333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAMCAIAAADtbgqsAAAACXBIWXMAAAsTAAALEwEAmpwYAAAB+ElEQVQoz2WSwW/TMBTG84dzgROckDjDYULAxBCHSYhJY2hIm0CwdqCuzdq0SUebpmmWxI6T2IntmC9JhYR4ihT52T9/733PlhBiOp2u1+vNZkMprapKSWmMaRot61o12rQLLBv8syzDySiKQCFjKaXiOCZd1HUtpSyEmHnkfFRenS3Zhxs28gUvueCVqEAOBgOIgQdohWG43W7TNMU6Y6yp+PBifnROT4fMHmyykwl5OVgf/ioTAeUkThaLxWq1KsuyhVEt7guCoCxKrmXw5Yfz5NV8GjR9tcawu8h5OL177WujlVR5nhdF0XYH2HTR6PawrOXvZ0fbd5/3JJJdPjyNFg8WxE9JRmaz2XK53Cvv4c6PIqXLF8f3P2//XtfnUzcbPnKSGSN5Or4Zo3LYBP1/YHgYRhEltE/hU53ZK4++P1hv/UIqeObDHZCofw/3obUmsI4SUVU93pUgv5/dn7wNM5prrVAw5xxzwZbVMwj0AP1S8PD2Lvlki4CUOd8x/tHePX/jOaPEGLXbRbZtz+dzzKjtGXf0bqMS9IkymRfFh9flwdW349HjC//ppf/VjUz3WgAwxiDe61noczKZOI4DHm1gYEJWLGPC3Xlj/3pDY5qrWmDL8zzIJEkCrG/TwsRAohIMHG+oda4x/wfUcMZ1XbxQ6PfJP8RQnZhX/jXWAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+    style=&quot;padding-bottom: 61.66666666666666%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAMCAYAAABiDJ37AAAACXBIWXMAAA7DAAAOwwHHb6hkAAACaUlEQVQoz2VTa4vTQBTNn/YXiH4S/CJ+EURYhQVdUBDqh1Vc7XZtd1tqa9/dPtKkSdNHmvckk8zxzrSrKw5MLrmZc+bk3nM1y7JEt9uFruuCNlzXRRRFyNIUEJxigjiOwQoOjgI8k7kMeZ7Dtm2Jk1GA1tXVldDCMMR6vRaSyPd9BeA5hx/F6E08fPkZofdpiOi8j3C6RlakSJIEKUsxHo/RarUwGo1QFIWo1WrQpDIixG63E85qhZgx8CDAxdcp3l74OG/4uC1P4L9vYfuyCqPUR14oQTAMA8PhEIvFQiWq1arQJpMJTNNU8hmRBSyBefYZv56eYb706VihwDnFzQ8d/Qd92OW1yqVJCvmHcsulFHLO1QtJVjFytpg+fIXtt4Z6F6Tm7pt86i8MTJ5MEUahEjEcDDGfz/8SprL4CngAubcL3D5/h8Ba/8kLQaT54TeXZQfNR2PEbgJrZaHT6WA2m0HyVCqVe4TiAJDybaql7PR9wvxI2Kpv8OGNgSTmCAKf1Omyqarrl5eX/xNmWaas4/qessn9lcYM52cOLkorOpfQ5qrud5fX6/V/CVWtKHphAPtmjP33EdguIACDuY9wWjNx8noGe+GjII/q+gLSw7LTkvj6+hoaqVGGXi6XQvor5zm4KOA259ie3CCk/bHUw+OyiWcVA11zd2gQXSxJ9vu9VCiOTREa+Q+9Xk/IwjqOc5gKOsh4hnDrIe3b6HQttFchvCCCyDMi8VRnV1RrWfOjC0Sj0YBGHhTNZhPtdlvIQ57nKdKYJiVJGWKe0vQw5DSCjDwaUZ7GFRIzGAyw2WwkRimkpojffiuCNWu+x9YAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
   &gt;&lt;/span&gt;
   &lt;img
         class=&quot;gatsby-resp-image-image&quot;
         alt=&quot;Untitled&quot;
         title=&quot;Untitled&quot;
-        src=&quot;/static/3bc85d7f23e3c25e8a1916b6b46806f7/e5715/Untitled.png&quot;
-        srcset=&quot;/static/3bc85d7f23e3c25e8a1916b6b46806f7/5a46d/Untitled.png 300w,
-/static/3bc85d7f23e3c25e8a1916b6b46806f7/0a47e/Untitled.png 600w,
-/static/3bc85d7f23e3c25e8a1916b6b46806f7/e5715/Untitled.png 768w&quot;
-        sizes=&quot;(max-width: 768px) 100vw, 768px&quot;
+        src=&quot;/static/d88e06f9ce259482eac0555c4a066bb1/f4b77/Untitled.png&quot;
+        srcset=&quot;/static/d88e06f9ce259482eac0555c4a066bb1/5a46d/Untitled.png 300w,
+/static/d88e06f9ce259482eac0555c4a066bb1/0a47e/Untitled.png 600w,
+/static/d88e06f9ce259482eac0555c4a066bb1/f4b77/Untitled.png 770w&quot;
+        sizes=&quot;(max-width: 770px) 100vw, 770px&quot;
         style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
         loading=&quot;lazy&quot;
       /&gt;
@@ -180,21 +180,21 @@ result &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span clas
 &lt;p&gt;아래는 &lt;a href=&quot;https://recon.cx/2015/slides/recon2015-20-steven-vittitoe-Reverse-Engineering-Windows-AFD-sys.pdf&quot;&gt;Defcon 2015&lt;/a&gt; 발표 자료에서 참고한, Winsock 처리 관련 모듈들이 정리된 자료입니다.&lt;/p&gt;
 &lt;p&gt;&lt;span
       class=&quot;gatsby-resp-image-wrapper&quot;
-      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 665px; &quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 669px; &quot;
     &gt;
       &lt;span
     class=&quot;gatsby-resp-image-background-image&quot;
-    style=&quot;padding-bottom: 100.33333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAACXBIWXMAABcRAAAXEQHKJvM/AAADeUlEQVQ4y5VUaXPaSBDl/3/Mt3zaqlQ23op3SewkxAFsDNhcAslcwgbjIAmBwFiAxSEOz8sbrffA9u7WTlXXHOp+/fr1aEKmmfKq1QNUKgfCNI9h2xparW/QtA+4uvqCm5sERqMKFguF65j0Q73+CcNhGpNJAcvlPeQQQgRzyHHiXqcTxuXle+G6MXS7GVjWIZrNfYIfwjAiDCzRNYd+PwJd/wXtdhizWQLrdYaJJruAllXwdD3GrHFhWRmCVPH9+xn3MTJNcF/E7a2O+byMXi/LRCf8nsR0qsF1VTL0dgE7nYrXbBbopIlmU2HABRlWCaaQbY3WwHa7hfR/jHkE+Gsv/vaBJZ+y5AhooteLk1GBTKJMEIFpfiX4CR4eNvi3sQPYbutsisIGlEWjoVGjC4I1WHKJYC0yvIbjWBgMupx7nG02xH7cd7HZrHdL9rw8RdBYVolnKnVJ0vmEDYjj/v6M50X4fo6BeTLPoFYLo1h8B1XdY7IoG/NEQ8OoeK2W1FAV7XYRUk/DKEOeOU6DDWmS0RXnK8rRpDQVXF+r7LTGvY7VarkL2OtpXr9fZJAmRqMLslMJeoZyOU4Z0gROB3u5NowcWevssLQ6fbXnXbbtrOe6BTYgRQ2/ESDOOxmlfimWlCYbCZREqXRAfY8IHgu+G8YpZZH3cPpUw3OmUHjP0sJxjvhXxKnjMeQZUGTZGeqYD87u7n63wSBK/xTZZZ9f7NksGzRlOIwLRXkLabr+G0EKdCoFgBLY98/5O74LrNX6yDM1aNZyOX0JUKUmSZHPv0G1+v4xoMT7p7AsGaRQ/CKbcEwZ4mxQUt4K6pn/Z0DPS4tabT9g1+l8DgC32xzG4zbLWrJEj6CLwHx/Huzn8xmTPvwJKC00n+eCkm9v46Jel4C/BgyFUGh5JrLwX+MPsACw7+Q9d6xQ7AKvTQHSuGYT5KOQxXRi4/+MkGmc3g/7p+gax6KihVFS9nHTOsKwn4RtxuAMrlnmhmUvqNfymdm2TYk6fCtv6Lfi8xV+tbXze+ifvxWXX1+jEXkNK/UGTm4PVvInDE8+YbNaw6fz6gWTgKZpBoCu6yI0Tfz8sOgksGjGxEA9RL/4EeNahPYF09pnTM6i8OfLF9n5vr8DvtlsEMLd1MNoAjGaCIz5nE88bAYjDBst9KsNeIMh1nSUwU9NgjwdPwDfWcOS/zFQ6AAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+    style=&quot;padding-bottom: 100.33333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAACXBIWXMAABcRAAAXEQHKJvM/AAADvElEQVQ4y4VUa3PaRhTlz/c/tP3SNukk4ySOHcd2AD/AAfMQGCxhEEg8zEtggbEFBsxDe3p2cTKl0zaauXOl1e7Zc+65uwFN2/MymQ+Ixd4IXd9HpRKHrn+W30ildlAsfoFtX6LXi6JQ2IwnkzuoVkNoNs9xd9eF543FbDbjOl0EqtVDr98/4oSPYjQKc2GSEeTkT+h0DuA4IdzfXwHIYDgMc94ubm/3MZ1GsV4nsViM8fKIer2OgGVFvGr1hEyCotuNod830G7HUSp94eJTDAZZsjAwn+e4UYwKgqjVTjAeZ/DwkMZs5kEICIlYrVZFoFDQPNPMwrLyoly+gmleo9G44cIcmRT5XsTz8zNWKx/L5Yp5rWK53GRBNN/38QKIgG0feq3WEer1A+E4QTLUIL8bjc+Ufch8RGkL/N+zBWgYWa9YVMzI8JrS8wQxKTlHYIthcxOHsvtw3TtGn2XYZDm2Wq0Uy++A7fa5Bxj8kRO+n8fjY5wAEdYrQvcSZJejZI0SNRqU4sYHuL5+R8d3qSDI8Qle8DaAxeKlV6+nyUoTjUaGC+Ks3RVbRbpdoLMmGZWYS3Td5Lw8yuUka56meTpdnm0DWlbSc12d9HUxHN5AvssNDCPKRUlOShI8pd6bzQwmE4sOV1S4rkH2T99rqQBNM+x5XhbdblxYVpgtcUaHw6zdBRlc8PsrgS5Us5tmULWSbZ+o/44TV22zBdhqhThyxUaNK5cHg1PKO6NzGqVkKDvB+sqmlj15pv73eiHW94Jgl+zPx23ATueEgDqbNCrS6VfQtNd0+j1BUpySpUEJyA2fnxM04y1yuTeUv8cxaVaSgN6/AV6zNjGe5R0W/KNaINltGCbJJMPiS5dPKTXMekfo/pXqgv8AzEv6CtAwdgi4r9j5forMLciDP516ygAZ8/mE32M1tl6vt/uw291IHo0i4ubmHeV+QIUs12tZwxSZN/CjZ+uklCun3iNdHt6nxf1Ikxkyj0YZuIME8+3mKvnWbD8CLN0cPz64MfTaEVHI7yHPu7FhB3F/x5unTWddGz6xlsulOmZ/Dyl3OByy5brsSZelsnhSfvtp7aTfohN7JSrBX1E6/hm30d/hXP6JVvwPOOFdzB88TOeyjtOtkLVtNpvs1RpPWYMXckoE+ge/+L5ziVX9XDwUjuHmDvBUDmFWCeHJDmOSCGHlTbAgo8VisRXfWMssq6IY2tn82LXq6Jm2cK0aBnYD3WIFxtcE9GgctUIRTq/Hc9xR0v4Zg8FAhuBxQzabFX8BptOxwVZb8psAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
   &gt;&lt;/span&gt;
   &lt;img
         class=&quot;gatsby-resp-image-image&quot;
         alt=&quot;Untitled&quot;
         title=&quot;Untitled&quot;
-        src=&quot;/static/45ce90ac910a2ced46c485a41be68445/5f4af/Untitled1.png&quot;
-        srcset=&quot;/static/45ce90ac910a2ced46c485a41be68445/5a46d/Untitled1.png 300w,
-/static/45ce90ac910a2ced46c485a41be68445/0a47e/Untitled1.png 600w,
-/static/45ce90ac910a2ced46c485a41be68445/5f4af/Untitled1.png 665w&quot;
-        sizes=&quot;(max-width: 665px) 100vw, 665px&quot;
+        src=&quot;/static/06e3ac7b77a8bbdc9663d2b716ed1a1f/99272/Untitled1.png&quot;
+        srcset=&quot;/static/06e3ac7b77a8bbdc9663d2b716ed1a1f/5a46d/Untitled1.png 300w,
+/static/06e3ac7b77a8bbdc9663d2b716ed1a1f/0a47e/Untitled1.png 600w,
+/static/06e3ac7b77a8bbdc9663d2b716ed1a1f/99272/Untitled1.png 669w&quot;
+        sizes=&quot;(max-width: 669px) 100vw, 669px&quot;
         style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
         loading=&quot;lazy&quot;
       /&gt;
