@@ -407,8 +407,6 @@ check_string_taint(CONTEXT *ctxt, ADDRINT ip, ADDRINT target){
 # 5. 참고 
 
 
-* https://www.google.com/search?q=libdft&oq=libdft&aqs=chrome..69i57j69i59l2j69i60l3.3035j0j7&sourceid=chrome&ie=UTF-8
-
 * https://github.com/AngoraFuzzer/libdft64
 
 * https://terrorgum.com/tfox/books/practicalbinaryanalysis.pdf
