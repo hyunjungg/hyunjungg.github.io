@@ -1,4 +1,483 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Hyunjung's Blog]]></title><description><![CDATA[보안과 개발을 좋아하는 학생입니다~^^]]></description><link>https://hyunjungg.github.io</link><generator>GatsbyJS</generator><lastBuildDate>Sun, 26 Mar 2023 15:37:18 GMT</lastBuildDate><item><title><![CDATA[Threat Hunting: Detecting APT37 TTPs]]></title><description><![CDATA[APT37은 최소 2012년부터 활동한 그룹으로 다양한 공격 방식을 사용해온 그룹입니다.  본 글에서는 APT37의 여러 위협 활동 중 최근(21년) 일어난 개인PC…]]></description><link>https://hyunjungg.github.io/threat_hunting/Threat_Hunting_Detecting_APT37_TTPs/</link><guid isPermaLink="false">https://hyunjungg.github.io/threat_hunting/Threat_Hunting_Detecting_APT37_TTPs/</guid><pubDate>Sun, 26 Mar 2023 16:58:13 GMT</pubDate><content:encoded>&lt;p&gt;APT37은 최소 2012년부터 활동한 그룹으로 다양한 공격 방식을 사용해온 그룹입니다. &lt;/p&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Hyunjung's Blog]]></title><description><![CDATA[보안과 개발을 좋아하는 학생입니다~^^]]></description><link>https://hyunjungg.github.io</link><generator>GatsbyJS</generator><lastBuildDate>Tue, 23 May 2023 06:29:19 GMT</lastBuildDate><item><title><![CDATA[Analyzing CVE-2023-21768: the LPE Vulnerability in Windows 11]]></title><description><![CDATA[TOC 1. CVE-2023-21768 2. Concepts A. I/O Ring (1) I/O Ring 기본 (2) The Role of I/O Ring in CVE-2023-21768 (3) I/O Ring API Usage B. AFD.SYS…]]></description><link>https://hyunjungg.github.io/exploit/Analyzing_CVE_2023_21768/</link><guid isPermaLink="false">https://hyunjungg.github.io/exploit/Analyzing_CVE_2023_21768/</guid><pubDate>Tue, 23 May 2023 15:23:13 GMT</pubDate><content:encoded>&lt;h3 id=&quot;toc&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#toc&quot; aria-label=&quot;toc permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;[TOC]&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#1-cve-2023-21768&quot;&gt;1. CVE-2023-21768&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href=&quot;#2-concepts&quot;&gt;2. Concepts&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#a-i-o-ring&quot;&gt;A. I/O Ring&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#-1--i-o-ring---&quot;&gt;(1) I/O Ring 기본&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#-2--the-role-of-i-o-ring-in-cve-2023-21768&quot;&gt;(2) The Role of I/O Ring in CVE-2023-21768&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#-3--i-o-ring-api-usage&quot;&gt;(3) I/O Ring API Usage&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#b-afdsys&quot;&gt;B. AFD.SYS&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#3-exploit-explain&quot;&gt;3. Exploit Explain&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#4-ref&quot;&gt;4. Ref&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;이번 글에서는 Windows 11에서 동작하는 LPE취약점인 CVE-2023-21768에 대해 설명합니다. &lt;/p&gt;
+&lt;h1 id=&quot;1-cve-2023-21768&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#1-cve-2023-21768&quot; aria-label=&quot;1 cve 2023 21768 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;1. CVE-2023-21768&lt;/h1&gt;
+&lt;p&gt;취약점은 Winsock처리 드라이버인 afd.sys에서 발생합니다.
+이는 afd.sys가 I/O Control (IOCTL) 요청을 처리하는 과정에서의 보안 검사 결함으로 인해 발생하게 되는데요. 공격자는 특별히 제작된 IOCTL 요청을 afd 드라이버로 보내어 이 취약점을 악용할 수 있으며, 이를 통해 상승된 권한으로 임의의 코드를 실행할 수 있습니다.&lt;/p&gt;
+&lt;p&gt;취약점의 영향을 받는 버전은 Windows 11H2, AFD.sys 10.0.22621.608 이하이며, POC는 &lt;a href=&quot;https://github.com/chompie1337/Windows_LPE_AFD_CVE-2023-21768&quot;&gt;여기&lt;/a&gt;서 확인하실 수 있습니다.&lt;/p&gt;
+&lt;h1 id=&quot;2-concepts&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#2-concepts&quot; aria-label=&quot;2 concepts permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2. Concepts&lt;/h1&gt;
+&lt;p&gt;이 섹션에서는 취약점을 이해하기 위해 필요한 개념인 I/O Ring 과 AFD.SYS 에 대해 설명합니다&lt;/p&gt;
+&lt;h2 id=&quot;a-io-ring&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#a-io-ring&quot; aria-label=&quot;a io ring permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;A. I/O Ring&lt;/h2&gt;
+&lt;p&gt;간단히 말하면  &lt;strong&gt;I/O ring은 Windows의 새로운 I/O 비동기 메커니즘입니다.&lt;/strong&gt;
+I/O Ring은 여러 개의 I/O 작업을 I/O Ring 큐에 집어넣은 후 한꺼번에 커널 쪽에 전달하는 방식을 사용합니다. &lt;/p&gt;
+&lt;p&gt;Windows 비동기 I/O 작업이라고 하면 다들 &lt;strong&gt;I/O Ring&lt;/strong&gt;이 아닌 전통적인 &lt;strong&gt;Overlapped I/O&lt;/strong&gt; 방식을 떠올리실 것 같습니다. 하지만 Overlapped I/O 방식은 I/O의 Read/Write 작업이 발생할 때마다 필수적으로 커널 모드전환이 필요합니다. 이는 많은 오버헤드를 발생시킵니다. &lt;/p&gt;
+&lt;p&gt;반면에 I/O Ring의 경우 I/O 작업에 대한 호출들을 일괄 전달함으로써 단 한 번의 커널 전환만 하기 때문에 CPU 사용을 효율적으로 할 수 있습니다. &lt;/p&gt;
+&lt;h3 id=&quot;1-io-ring-기본&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#1-io-ring-%EA%B8%B0%EB%B3%B8&quot; aria-label=&quot;1 io ring 기본 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;(1) I/O Ring 기본&lt;/h3&gt;
+&lt;p&gt;아직 Windows I/O Ring은 모든 동작을 지원하지 않습니다. 현재까지 Windows 11 22H2에서 가능한 동작은 read, write, flush, cancle 등이 있습니다.&lt;/p&gt;
+&lt;p&gt;요청된 동작은 &lt;strong&gt;Submission Queue&lt;/strong&gt;에 작성되고, 커널로 제출되어집니다. 이후 커널은 요청을 수행하고 &lt;strong&gt;Completion Queue&lt;/strong&gt;에 결과 상태 코드를 작성합니다. &lt;/p&gt;
+&lt;p&gt;앞서 언급한 작업(read, write, flush ..) 외에도, 추가적으로 두 가지 타입의 작업을 큐에 넣을 수 있습니다. 바로 Preregister buffers와 Preregister files입니다.  이 옵션들을 통해 애플리케이션은 미리 모든 파일 핸들을 열거나 모든 버퍼를 생성하고, 이들을 등록한 후에 I/O Ring을 통해 큐에 넣은 I/O 작업에서 인덱스로 이들을 참조할 수 있게 됩니다. 커널이 Preregister Buffers 혹은 Preregister files을 사용하는 항목을 처리할 때, 요청된 handle/buffer를 사전등록된 배열에서 가져와서 I/O 매니저에 전달게 됩니다. 이후에는 일반 I/O Ring 동작과 동일하게 처리됩니다.  &lt;/p&gt;
+&lt;p&gt;작업들이 큐잉된 Submission Queue의 예시 모습은 다음과 같습니다.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 768px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 61.33333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAMCAIAAADtbgqsAAAACXBIWXMAAAsTAAALEwEAmpwYAAAB+ElEQVQoz2WSwW/TMBTG84dzgROckDjDYULAxBCHSYhJY2hIm0CwdqCuzdq0SUebpmmWxI6T2IntmC9JhYR4ihT52T9/733PlhBiOp2u1+vNZkMprapKSWmMaRot61o12rQLLBv8syzDySiKQCFjKaXiOCZd1HUtpSyEmHnkfFRenS3Zhxs28gUvueCVqEAOBgOIgQdohWG43W7TNMU6Y6yp+PBifnROT4fMHmyykwl5OVgf/ioTAeUkThaLxWq1KsuyhVEt7guCoCxKrmXw5Yfz5NV8GjR9tcawu8h5OL177WujlVR5nhdF0XYH2HTR6PawrOXvZ0fbd5/3JJJdPjyNFg8WxE9JRmaz2XK53Cvv4c6PIqXLF8f3P2//XtfnUzcbPnKSGSN5Or4Zo3LYBP1/YHgYRhEltE/hU53ZK4++P1hv/UIqeObDHZCofw/3obUmsI4SUVU93pUgv5/dn7wNM5prrVAw5xxzwZbVMwj0AP1S8PD2Lvlki4CUOd8x/tHePX/jOaPEGLXbRbZtz+dzzKjtGXf0bqMS9IkymRfFh9flwdW349HjC//ppf/VjUz3WgAwxiDe61noczKZOI4DHm1gYEJWLGPC3Xlj/3pDY5qrWmDL8zzIJEkCrG/TwsRAohIMHG+oda4x/wfUcMZ1XbxQ6PfJP8RQnZhX/jXWAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/3bc85d7f23e3c25e8a1916b6b46806f7/e5715/Untitled.png&quot;
+        srcset=&quot;/static/3bc85d7f23e3c25e8a1916b6b46806f7/5a46d/Untitled.png 300w,
+/static/3bc85d7f23e3c25e8a1916b6b46806f7/0a47e/Untitled.png 600w,
+/static/3bc85d7f23e3c25e8a1916b6b46806f7/e5715/Untitled.png 768w&quot;
+        sizes=&quot;(max-width: 768px) 100vw, 768px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;h3 id=&quot;2-the-role-of-io-ring-in-cve-2023-21768&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#2-the-role-of-io-ring-in-cve-2023-21768&quot; aria-label=&quot;2 the role of io ring in cve 2023 21768 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;(2) The Role of I/O Ring in CVE-2023-21768&lt;/h3&gt;
+&lt;p&gt;CVE-2023-21768을 이해하기 위한 I/O Ring의 역할을 설명하겠습니다.&lt;/p&gt;
+&lt;p&gt;앞서 언급했듯이, I/O Ring을 사용하는 어플리케이션은 추후 I/O 작업에서 사용될 버퍼나 핸들들을 미리 등록해 놓을 수 있습니다. 이 Preregistered Buffers는 I/O Ring Object를 통해 참조됩니다.&lt;/p&gt;
+&lt;p&gt;I/O Ring Object의 구조체는 아래와 같습니다.&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;c&quot;&gt;&lt;pre class=&quot;language-c&quot;&gt;&lt;code class=&quot;language-c&quot;&gt;&lt;span class=&quot;token keyword&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;token class-name&quot;&gt;_IORING_OBJECT&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+    USHORT Type&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    USHORT Size&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    NT_IORING_INFO UserInfo&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    PVOID Section&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    PNT_IORING_SUBMISSION_QUEUE SubmissionQueue&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    PMDL CompletionQueueMdl&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    PNT_IORING_COMPLETION_QUEUE CompletionQueue&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    ULONG64 ViewSize&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    ULONG InSubmit&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    ULONG64 CompletionLock&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    ULONG64 SubmitCount&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    ULONG64 CompletionCount&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    ULONG64 CompletionWaitUntil&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    KEVENT CompletionEvent&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    UCHAR SignalCompletionEvent&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    PKEVENT CompletionUserEvent&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    ULONG RegBuffersCount&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    PVOID RegBuffers&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    ULONG RegFilesCount&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+    PVOID&lt;span class=&quot;token operator&quot;&gt;*&lt;/span&gt; RegFiles&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; IORING_OBJECT&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;*&lt;/span&gt;PIORING_OBJECT&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;만약 preregister 등록 요청이 들어오면 다음과 같은 일들이 순차적으로 일어나게 됩니다. (이해를 위해 간략하게 요약했습니다. 상세한 과정을 알고 싶으신 분들은 &lt;a href=&quot;https://windows-internals.com/one-i-o-ring-to-rule-them-all-a-full-read-write-exploit-primitive-on-windows-11/&quot;&gt;이 글&lt;/a&gt;을 참고해 주세요!)&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;①&lt;/strong&gt; IoRing→RegBuffers와 IoRing→RegBuffersCount가 0으로 설정됩니다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;②&lt;/strong&gt; 요청이 유저모드에서 온 경우, 배열의 주소가 유저모드 공간에 위치해 있는지 검증됩니다.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;③&lt;/strong&gt; 검증이 완료되면 &lt;strong&gt;커널은 페이징풀 메모리를 할당하고&lt;/strong&gt;, 이 메모리에 사용자 모드 배열로부터 데이터를 복사합니다. 이 메모리 주소는 IoRing→RegBuffers가 가리키게 됩니다.&lt;/p&gt;
+&lt;p&gt;이렇게 하여 데이터가 오직 유저 모드로부터 왔는지 확인함으로써, 우연히 커널 영역에 read, write, overflow가 발생하는 것을 방지합니다. &lt;/p&gt;
+&lt;p&gt;그러나, arbitrary kernel write 버그를 사용할 수 있다면 어떨까요?&lt;/p&gt;
+&lt;p&gt;IoRing→RegBuffers 값을 임의로 덮어쓰기 하여, 완전히 제어할 수 있는 가짜 메모리 주소를 가리키도록 한다면 커널 주소 공간을 완전히 제어할 수 있게 됩니다. &lt;strong&gt;커널은 한 번 등록된 register buffer 배열은 안전하다고 생각하고 주소 영역에 대한 추가 검사는 하지 않기 때문입니다.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;즉, arbitrary kernel write bug를 활용하여 full arbitray kernel read/write 버그를 사용할 수 있는 겁니다!&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id=&quot;3-io-ring-api-usage&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#3-io-ring-api-usage&quot; aria-label=&quot;3 io ring api usage permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;(3) I/O Ring API Usage&lt;/h3&gt;
+&lt;p&gt;아래는 I/O Ring을 사용하여 파일을 읽는 간단한 예제 코드입니다.
+POC코드를 이해하는 데에 있어서 I/O Ring API에 대한 간략한 이해가 필요하기 때문에, 각 함수에 대해 간단히 설명하고 넘어가겠습니다.&lt;/p&gt;
+&lt;div class=&quot;gatsby-highlight&quot; data-language=&quot;c&quot;&gt;&lt;pre class=&quot;language-c&quot;&gt;&lt;code class=&quot;language-c&quot;&gt;HRESULT result&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+IORING_CREATE_FLAGS flags&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+HIORING handle &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+HANDLE hFile &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+PVOID&lt;span class=&quot;token operator&quot;&gt;*&lt;/span&gt; buffer &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+flags&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;Required &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; IORING_CREATE_REQUIRED_FLAGS_NONE&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+flags&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;Advisory &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; IORING_CREATE_ADVISORY_FLAGS_NONE&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+result &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;CreateIoRing&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;IORING_VERSION_3&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; flags&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0x1&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0x1&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;&amp;amp;&lt;/span&gt;handle&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;SUCCEEDED&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;result&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;Failed creating IO ring handle : 0x%x\n&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; result&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+	hFile &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;CreateFile&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;L&lt;span class=&quot;token string&quot;&gt;&quot;C:\\WINDOWS\\SYSTEM32\\notepad.exe&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt;
+					GENERIC_READ&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; OPEN_EXISTING&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; FILE_ATTRIBUTE_NORMAL&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;hFile &lt;span class=&quot;token operator&quot;&gt;==&lt;/span&gt; INVALID_HANDLE_VALUE&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;Failed opening file handle : 0x%x\n&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;GetLastError&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;token keyword&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+	IORING_HANDLE_REF reqFile &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;IoRingHandleRefFromHandle&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;hFile&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	reqFile&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;Kind &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; IORING_REF_RAW&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+	buffer &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;PVOID&lt;span class=&quot;token operator&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;VirtualAlloc&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0x200&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MEM_COMMIT&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; PAGE_READWRITE&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;buffer &lt;span class=&quot;token operator&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;Failed to allocate memory\n&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;token keyword&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+	IORING_BUFFER_REF reqBuffer &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;IoRingBufferRefFromPointer&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;buffer&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	reqBuffer&lt;span class=&quot;token punctuation&quot;&gt;.&lt;/span&gt;Kind &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; IORING_REF_RAW&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+	result &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;BuildIoRingReadFile&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;handle&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; reqFile&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; reqBuffer&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0x200&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; IOSQE_FLAGS_NONE&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;SUCCEEDED&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;result&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;Failed building IO ring read file structure : 0x%x\n&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; result&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;token keyword&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+	result &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;SubmitIoRing&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;handle&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;SUCCEEDED&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;result&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;Failed submitting IO ring: 0x%x\n&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; result&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;token keyword&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+	IORING_CQE cqe &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	result &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token function&quot;&gt;PopIoRingCompletion&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;handle&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;&amp;amp;&lt;/span&gt;cqe&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token operator&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;token function&quot;&gt;SUCCEEDED&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;result&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;token keyword&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;Result code : %x \n&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; result&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;Data from file:\n&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	ULONG64 endOfBuffer&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	endOfBuffer &lt;span class=&quot;token operator&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;ULONG64&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;buffer &lt;span class=&quot;token operator&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0x200&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token keyword&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;ULONG64&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;buffer &lt;span class=&quot;token operator&quot;&gt;&amp;lt;&lt;/span&gt; endOfBuffer&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt; buffer&lt;span class=&quot;token operator&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;%p &quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token operator&quot;&gt;*&lt;/span&gt;buffer&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;token function&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;token string&quot;&gt;&quot;\n&quot;&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;token keyword&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;false&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;handle &lt;span class=&quot;token operator&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;token number&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;token function&quot;&gt;CloseIoRing&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;handle&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;hFile&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;token function&quot;&gt;CloseHandle&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;hFile&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;token keyword&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;buffer&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;token punctuation&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;token function&quot;&gt;VirtualFree&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;(&lt;/span&gt;buffer&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;token constant&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;,&lt;/span&gt; MEM_RELEASE&lt;span class=&quot;token punctuation&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;token punctuation&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;token punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;CreateIoRing()&lt;/code&gt; : IoRing 객체 생성. 유저모드와 커널모드에 각각 객체가 생성됨.&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;IoRingHandleRefFromHandle&lt;/code&gt; : 핸들을 통해 *&lt;strong&gt;*IORING&lt;em&gt;HANDLE&lt;/em&gt;REF**&lt;/strong&gt; 구조체 생성. 이 구조체는 I/O Ring 작업에 사용되는 핸들에 대한 참조임.&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;BuildIoRingReadFile()&lt;/code&gt; : IoRing의 &lt;strong&gt;Submission Queue&lt;/strong&gt;에 읽기 작업을 넣음. (≒ ReadFileEx)&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;SubmitIoRing()&lt;/code&gt; : &lt;strong&gt;Submission Queue&lt;/strong&gt;의 작업들을 커널에 제출하고 완료를 기다림.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;b-afdsys&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#b-afdsys&quot; aria-label=&quot;b afdsys permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;B. AFD.SYS&lt;/h2&gt;
+&lt;p&gt;앞서 언급한 대로, I/O Ring을 통해 커널 주소 공간을 제어하기 위해서는 arbitrary kernel write bug가 필요합니다. 이를 위해 afd.sys 드라이버에서 발생하는 취약점을 활용하는데요, afd.sys드라이버가 뭔지 간략하게 알아보겠습니다.&lt;/p&gt;
+&lt;p&gt;AFD.SYS 드라이버란 “Ancillary Function Driver for Winsock”의 약자로, Windows 소켓 2.0에서 제공하는 TCP/IP 프로토콜 기능을 지원하기 위해 설계된 Windows 커널 모드 드라이버 입니다.&lt;/p&gt;
+&lt;p&gt;아래는 &lt;a href=&quot;https://recon.cx/2015/slides/recon2015-20-steven-vittitoe-Reverse-Engineering-Windows-AFD-sys.pdf&quot;&gt;Defcon 2015&lt;/a&gt; 발표 자료에서 참고한, Winsock 처리 관련 모듈들이 정리된 자료입니다.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 665px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 100.33333333333334%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAACXBIWXMAABcRAAAXEQHKJvM/AAADeUlEQVQ4y5VUaXPaSBDl/3/Mt3zaqlQ23op3SewkxAFsDNhcAslcwgbjIAmBwFiAxSEOz8sbrffA9u7WTlXXHOp+/fr1aEKmmfKq1QNUKgfCNI9h2xparW/QtA+4uvqCm5sERqMKFguF65j0Q73+CcNhGpNJAcvlPeQQQgRzyHHiXqcTxuXle+G6MXS7GVjWIZrNfYIfwjAiDCzRNYd+PwJd/wXtdhizWQLrdYaJJruAllXwdD3GrHFhWRmCVPH9+xn3MTJNcF/E7a2O+byMXi/LRCf8nsR0qsF1VTL0dgE7nYrXbBbopIlmU2HABRlWCaaQbY3WwHa7hfR/jHkE+Gsv/vaBJZ+y5AhooteLk1GBTKJMEIFpfiX4CR4eNvi3sQPYbutsisIGlEWjoVGjC4I1WHKJYC0yvIbjWBgMupx7nG02xH7cd7HZrHdL9rw8RdBYVolnKnVJ0vmEDYjj/v6M50X4fo6BeTLPoFYLo1h8B1XdY7IoG/NEQ8OoeK2W1FAV7XYRUk/DKEOeOU6DDWmS0RXnK8rRpDQVXF+r7LTGvY7VarkL2OtpXr9fZJAmRqMLslMJeoZyOU4Z0gROB3u5NowcWevssLQ6fbXnXbbtrOe6BTYgRQ2/ESDOOxmlfimWlCYbCZREqXRAfY8IHgu+G8YpZZH3cPpUw3OmUHjP0sJxjvhXxKnjMeQZUGTZGeqYD87u7n63wSBK/xTZZZ9f7NksGzRlOIwLRXkLabr+G0EKdCoFgBLY98/5O74LrNX6yDM1aNZyOX0JUKUmSZHPv0G1+v4xoMT7p7AsGaRQ/CKbcEwZ4mxQUt4K6pn/Z0DPS4tabT9g1+l8DgC32xzG4zbLWrJEj6CLwHx/Huzn8xmTPvwJKC00n+eCkm9v46Jel4C/BgyFUGh5JrLwX+MPsACw7+Q9d6xQ7AKvTQHSuGYT5KOQxXRi4/+MkGmc3g/7p+gax6KihVFS9nHTOsKwn4RtxuAMrlnmhmUvqNfymdm2TYk6fCtv6Lfi8xV+tbXze+ifvxWXX1+jEXkNK/UGTm4PVvInDE8+YbNaw6fz6gWTgKZpBoCu6yI0Tfz8sOgksGjGxEA9RL/4EeNahPYF09pnTM6i8OfLF9n5vr8DvtlsEMLd1MNoAjGaCIz5nE88bAYjDBst9KsNeIMh1nSUwU9NgjwdPwDfWcOS/zFQ6AAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/45ce90ac910a2ced46c485a41be68445/5f4af/Untitled1.png&quot;
+        srcset=&quot;/static/45ce90ac910a2ced46c485a41be68445/5a46d/Untitled1.png 300w,
+/static/45ce90ac910a2ced46c485a41be68445/0a47e/Untitled1.png 600w,
+/static/45ce90ac910a2ced46c485a41be68445/5f4af/Untitled1.png 665w&quot;
+        sizes=&quot;(max-width: 665px) 100vw, 665px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;h1 id=&quot;3-exploit-explain&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#3-exploit-explain&quot; aria-label=&quot;3 exploit explain permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;3. Exploit Explain&lt;/h1&gt;
+&lt;p&gt;취약점이 발생하는 부분은 afd.sys 의 &lt;code class=&quot;language-text&quot;&gt;afd!AfdNotifyRemoveIoCompletion&lt;/code&gt; 함수 내부입니다.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 960px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 19.333333333333332%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAECAIAAAABPYjBAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAmUlEQVQI1z2OwRLDIAhE8z2CosJqkpke0qantv//O8U4kz2xsPBYjs9LoRSIIxORiBhs3fq29/2xm1mFcbyUkhfMPGsPL8/fGxtCCN5zn1KSJFqSZs45q6nfUlgupRqqmWSp3mjwC758apvksSy5AOAh4qk4DU3vGbpGg3x8T+12vx2vx5zUVAa2o63NGkqtjquAk/0RrM2Tf/J9LdBd04s/AAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/5d524ca47730d75b0a8ff0ebb3c830fe/d9199/Untitled2.png&quot;
+        srcset=&quot;/static/5d524ca47730d75b0a8ff0ebb3c830fe/5a46d/Untitled2.png 300w,
+/static/5d524ca47730d75b0a8ff0ebb3c830fe/0a47e/Untitled2.png 600w,
+/static/5d524ca47730d75b0a8ff0ebb3c830fe/d9199/Untitled2.png 960w&quot;
+        sizes=&quot;(max-width: 960px) 100vw, 960px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;이때, 공격자가 unkownAFDStruct의 field_18값을 제어할 수 있다면, arbitrary kernel Write-Where primitive가 활성화됩니다. writeValue의 값은 &lt;code class=&quot;language-text&quot;&gt;KeRemoveQueueEx&lt;/code&gt; 의 반환 값이며, 이 값은 인자로 전달된 Queue에서 제거된 항목의 count값 입니다. &lt;a href=&quot;https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock/&quot;&gt;분석에 따르면 이 값은 항상 1이 었다고 합니다.&lt;/a&gt; 즉, 원하는 주소의 값을 0x1로 수정할 수 있게 됩니다.&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;afd!AfdNotifyRemoveIoCompletion&lt;/code&gt; 내부로 진입하기 위해, POC코드에서는 AFD드라이버와 직접 통신하는 방법을 사용합니다. (상응하는 Windows API는 모르지만, IOCTL Code는 알기 때문입니다.) &lt;/p&gt;
+&lt;p&gt;따라서 직접 AFD 디바이스 오브젝트를 통해 handle을 얻습니다. 아래 코드를 참고해 주세요.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1200px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 10.999999999999998%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAACCAYAAABYBvyLAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAX0lEQVQI113MUQqAIBCEYe9RuxUWGBgK5SZkPXj/O01FUeDDB//DMMptGcueEeIKFwUxHZA1YjQGjR7Q9hpMBOILPZj565KykjDJBhGB9TOMD+h0j7qq/uF7cB9x0aUTWs05EqmKacMAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/f4a2eccddfd3efd052c889af5cb3a330/c1b63/Untitled3.png&quot;
+        srcset=&quot;/static/f4a2eccddfd3efd052c889af5cb3a330/5a46d/Untitled3.png 300w,
+/static/f4a2eccddfd3efd052c889af5cb3a330/0a47e/Untitled3.png 600w,
+/static/f4a2eccddfd3efd052c889af5cb3a330/c1b63/Untitled3.png 1200w,
+/static/f4a2eccddfd3efd052c889af5cb3a330/8affb/Untitled3.png 1254w&quot;
+        sizes=&quot;(max-width: 1200px) 100vw, 1200px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;핸들을 정상적으로 얻었다면 &lt;code class=&quot;language-text&quot;&gt;DeviceIoContorlFile()&lt;/code&gt; 을 통해 드라이버와 통신합니다. 이때, unknownAFDStruct 구조체의 값은 DeviceIoControlFile에서 사용되는 InputBuffer 값입니다.(7번째 인자)&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1200px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 38.666666666666664%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAICAYAAAD5nd/tAAAACXBIWXMAABcRAAAXEQHKJvM/AAABEElEQVQoz53Q7UrDMBgF4DhBZSKIBQXbNE2/Zpt+p3PtUHDKpiL+ELyI3f8F9Jhug9XCKvjj4UBCzvsS8rx8xfQ+b8p6jiCOESUFIjFVJIQokaY1OHeg6zoMSjfoALJcrRopU6RigpAxBNyG07KdTbq2C9uywC0Gru4tZoJR4yDiRQU8kTWOyEC9CKYbw3AFjCCF4cdgfnuewLxLQP0IuhvihrmKt8vfyJlX4Sp8wIVKYkoQptBiy2zlu+xg8rATf4axKrzMFtDkE85FhZEjccTlfkBff0DXafgIbf6Oa7lQxRWOnRLEKvYPWTFc0DeazBr/4xt6/gJym223Mge2+8s4fwP9XDda/QVipJ1/+58fJ37cEPkZi24AAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/e5090539cb29828b9ba1ff692a49c173/c1b63/Untitled4.png&quot;
+        srcset=&quot;/static/e5090539cb29828b9ba1ff692a49c173/5a46d/Untitled4.png 300w,
+/static/e5090539cb29828b9ba1ff692a49c173/0a47e/Untitled4.png 600w,
+/static/e5090539cb29828b9ba1ff692a49c173/c1b63/Untitled4.png 1200w,
+/static/e5090539cb29828b9ba1ff692a49c173/d61c2/Untitled4.png 1800w,
+/static/e5090539cb29828b9ba1ff692a49c173/025a1/Untitled4.png 1857w&quot;
+        sizes=&quot;(max-width: 1200px) 100vw, 1200px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;실제로 &lt;code class=&quot;language-text&quot;&gt;afd!AfdNotifyRemoveIoCompletion&lt;/code&gt; 에 breakpoint를 걸어 확인해 보겠습니다. 이 함수에서 unknownAFDStruct 값은 세 번째 파라미터로 전달됩니다. &lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1119px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 26.333333333333336%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAFCAYAAABFA8wzAAAACXBIWXMAABcRAAAXEQHKJvM/AAABGElEQVQY022Q226CQBRF/f/PMsEaFWSGDgyIFkmqMVVBRhRvszql6VtPsrPX087KGQyHQzudTomiyCqlKIqC7XbD8XjENA2nU83ZGC7tmefjQXe70V477vc7N8dd1/X9xwM3RJ7nVmtNmqZ8rEt2XwdMe+V86TiZC41jc71xuT+p9jWbZEWz2/PfDSaTiRVCIERo/WCOjDPke0ysM5Yfa3S+IglClqMx2huReW/krvV4hjGtM/21+zG21vaDSCmtC6GQLNefFM5SxRqdLUh0SpZm5CohCQULFaOdgJIJjTnzer1o27Yf6w09z7NBEOD7vnXpzeZS4YeSQER9hBubO+tZGBE6DiJFpBcc3J+rqqIsS+q6pnE//wa9/W1HAr+8IAAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/6736c791d11221c97a9f1cbf51b586a7/33a7b/Untitled5.png&quot;
+        srcset=&quot;/static/6736c791d11221c97a9f1cbf51b586a7/5a46d/Untitled5.png 300w,
+/static/6736c791d11221c97a9f1cbf51b586a7/0a47e/Untitled5.png 600w,
+/static/6736c791d11221c97a9f1cbf51b586a7/33a7b/Untitled5.png 1119w&quot;
+        sizes=&quot;(max-width: 1119px) 100vw, 1119px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;세 번째 파라미터 값을 확인한 후 메모리 내용을 보면 InputBuffer로 넣은 값이 보입니다.&lt;/p&gt;
+&lt;p&gt;위 코드에서 알 수 있듯이, InputBuffer에서 0x18~0x20번째 값에는 0x1로 수정할 주소값이 들어있습니다. 수정할 주소값은 I/O RING 오브젝트의 RegBuffers + 0x3 부분이므로 (I/O Ring + 0xbb) 해당 주소를 확인해 보면, 아래 그림처럼 IORING_OBJECT를 확인하실 수 있습니다.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 970px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 44.99999999999999%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAJCAYAAAAywQxIAAAACXBIWXMAABcRAAAXEQHKJvM/AAABbElEQVQoz5WRbU/CMBSF9///ktEPM4qO0b21boMJjMHeN+QtYBg97jbhizGoJzlt1+Se3edWC8NQOo4Dx7GlEBzj8Vh5MpnA9wMwxhBFkfJsNsN+v8fhcFD7T9ba9RpsNJLMERj5MZrdJ66qqhKWZWOxWCBJEhRFgdPphOPxCCklLpcLuq5TO33TWavqWnLXgckjeSc+cC8aPPgbsPiArGzAPQ+GYSjrug4hBIiIKLIsw3Q6xXK5VD+M4xha07R9kQseRHgRCdgkh58dkW06lGWlAgl13ZNQQNu2fecV8jxX57IsUde1uiNrtJimCa/vcmQM4FomitUCkB2apsFut8N/pFER5xxv/QNYng/mCgxtjmSVY7vdKtNsSNdZ3bIKdGwbrggwFHMY3jt0NgbjIeL5TL024ZGuRTc7JH5jOITZ++lRx+vgGTYzka6Waj7fsX8NpIIgCHpsAWZZCMJQDZtEuGma4nw+/ymM9AXGSaGTsQRvbwAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/f6185181280c2b8912e53b3226c558c0/587b0/Untitled6.png&quot;
+        srcset=&quot;/static/f6185181280c2b8912e53b3226c558c0/5a46d/Untitled6.png 300w,
+/static/f6185181280c2b8912e53b3226c558c0/0a47e/Untitled6.png 600w,
+/static/f6185181280c2b8912e53b3226c558c0/587b0/Untitled6.png 970w&quot;
+        sizes=&quot;(max-width: 970px) 100vw, 970px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;결론적으로, InputBuffer 내의 데이터 일부에 쓰인 주소에 해당되는 값을 afd.sys 드라이버에서 0x1로 변경하기 때문에 일어나는 취약점입니다.&lt;/p&gt;
+&lt;p&gt;따라서 이 취약점을 사용하면, 위 I/O Ring 설명 부분에서 언급했던 IoRing→RegBuffers 의 주소의 일부를 1로 수정할 수 있습니다.! 그림과 함께 좀 더 상세히 살펴보겠습니다.&lt;/p&gt;
+&lt;p&gt;아래는 I/O Ring Object를 생성했을 때 모습입니다.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1069px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 41%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAICAYAAAD5nd/tAAAACXBIWXMAABcRAAAXEQHKJvM/AAABTUlEQVQoz5VRTW+CUBDk//8NL8abiYm2XrwYvxAeUBFTFKtikA8FQUq0vOny0npqY9xk8uawb3ZnVnIchzOmwjDeuL1cIQwCgg/XdcEYw3a7Ffx4POJ6vf6LoigEpIAENKbyiWFjvPAQf3KUAC55TkMMWJYlsF6v4fs+oigSHy+Xi0BOfRV+SzocfM7UKUbWnr8aIXrzGL1FCjdMYegaJrIM0zShqqoQ1nVdiJMz2LZ952VZ3gWpSYMxm2Mok8W9j6z4QpZlojFJEtxuN2Hr9/2Lc85/BD0PqqKIbeTJmPgUu80GWZoiJ0vPVCUq+WHI9bkJzd7wwXyDgfmBoelgS4NWdJCAjlFVZan68AhSQLbUdpsrLx0Mmk3o3S7sfh8eZRXOZjjvdk9tKa0Y40qjgVG9zvu1GmatFiI6xIlieO90cFoucaY8kzgWeT7CN0MPVW2Kxp1eAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/f459fde55fedb791d6de684f6c2dc174/e2e58/Untitled7.png&quot;
+        srcset=&quot;/static/f459fde55fedb791d6de684f6c2dc174/5a46d/Untitled7.png 300w,
+/static/f459fde55fedb791d6de684f6c2dc174/0a47e/Untitled7.png 600w,
+/static/f459fde55fedb791d6de684f6c2dc174/e2e58/Untitled7.png 1069w&quot;
+        sizes=&quot;(max-width: 1069px) 100vw, 1069px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;취약점을 사용하여 RegBuffers + 0x3 바이트를 0x1로 변경해줍니다.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 411px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 6.666666666666667%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAABCAYAAADeko4lAAAACXBIWXMAAAsTAAALEwEAmpwYAAAASElEQVQI1x3FWwqAIBRAwTYjKKFe35phtP9FnaSPYQ6Rk1rd5rln/G9daM3TN20jymZCysh8cePBhchai3ENSikopZDkMUbzAfcQH9Ptv4VuAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/793cd0c095fa9a3cc95506739511f725/2a432/Untitled8.png&quot;
+        srcset=&quot;/static/793cd0c095fa9a3cc95506739511f725/5a46d/Untitled8.png 300w,
+/static/793cd0c095fa9a3cc95506739511f725/2a432/Untitled8.png 411w&quot;
+        sizes=&quot;(max-width: 411px) 100vw, 411px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;이후 I/O Ring Object를 확인해보면, 아래와 같이 주소값이 &lt;code class=&quot;language-text&quot;&gt;0x1000000&lt;/code&gt;으로 변하게 됩니다.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1069px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 41.333333333333336%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAICAYAAAD5nd/tAAAACXBIWXMAABcRAAAXEQHKJvM/AAABbElEQVQoz3WR626CQBCFef9XaWLSpm1irIlterEVBZcKGlGIVosLWIuARmBPh601xtRJvuz8mD0zZ0ZxHEfomgbDeBf2aIzA9wmO2WwGXdcxnU5lvlwusdvtzrLdbiWK7wfo6ppoGTbeBh5WG4ECQJKm1MRAv9+XuK4LzjnCMJQfkySRpFRX8hfKYsFpwjZerbmosgAN6wuNwRqzYA3GumipKkzThEYuSmHGmBQnZ7Bt+5AXRbEXpK5lkdHro6mSxU+OeJsjjmO4VBhFEbIsk7byPD/k5XucCyH2gp4nuxskqrZa0DodfEwmiNdrpGRJRll8zJkoRRUehoJZJtjQFU3TwUvvlyk1cuggIU3472eyWAqcovDxGNrtjVBrDTxc19G5u4f99Aiv28WCjjKnS8dUEw2HyOjaGTUpguDslMrEMASrVKBWrsTzxSWsah0RiXwTdq0G3mwipMOU74pW891uIxqNkGw2cs+n/ACYX1MxPmQJuwAAAABJRU5ErkJggg==&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/493e4adcb3763920253df7d385ee8302/e2e58/Untitled9.png&quot;
+        srcset=&quot;/static/493e4adcb3763920253df7d385ee8302/5a46d/Untitled9.png 300w,
+/static/493e4adcb3763920253df7d385ee8302/0a47e/Untitled9.png 600w,
+/static/493e4adcb3763920253df7d385ee8302/e2e58/Untitled9.png 1069w&quot;
+        sizes=&quot;(max-width: 1069px) 100vw, 1069px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;(설명은 생략했지만 취약점을 두 번 사용해서 바로 위 필드인 RegBuffersCount 값도 변경해 주어야합니다!)&lt;/p&gt;
+&lt;p&gt;RegBuffers 의 값이 &lt;code class=&quot;language-text&quot;&gt;0x1000000&lt;/code&gt;으로 변경되었으니, 유저 모드에서 &lt;code class=&quot;language-text&quot;&gt;0x1000000&lt;/code&gt; 주소를 할당받아 사용하면 되겠죠?&lt;/p&gt;
+&lt;p&gt;이를 활용하면, SystemToken 주소값을 구할 수 있습니다.&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1200px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 55.00000000000001%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAALCAYAAAB/Ca1DAAAACXBIWXMAABcRAAAXEQHKJvM/AAAB+klEQVQoz3WS626bQBCFad0mDhjfkkZpzN3ALgvY2PiKb2mCihKlah6g//r+r+DTsbFVu0p/fDqzI/ZwdjRS1/W38XQFkaRb0RcYxSHWQqDgDKnjwuAcjuvC8zy4pL4nwFgE3w+pJ8B5j/oMmqZB13VIlmlBBOFWCB+2bUGj5g6TPjA79+jcf0VnrwcOPU3rnKDBMAwYe0PH2fI4RTickybwghA+pxRRb1+LIEZAsEDAFxEcn8MNBWzHKU1Mk9Qsa0Jq8yluhgX0xRvupt/R6i9x21uhFS+h9hZoiQz1MEMrWqBN2iSuwzmU7hCyPYDsnCMpbIHL8AnVLIeyLFCfveIufUWY/gSLn2EHT3CjR+hsBknrQ+okJUb6PirPIEc5GpMCalqgnXxDK1yh4a9QD1b7WiXawRqKT7ANsYZkDslgWOopKl/gihLW+QY3gxxf0hyX/rz8mzWCZJPapNYYH+0JKgf+GqbnqMHuyTlqlKARbVB1p/jkTHDhjFHVEih6gs/6oLx8xj9GR/May6D0X2C9/IaW/4L38AZtSim7ZEpGsjFA5b0k5n8MFTZHjWZoz37AGz8joFnejgpUKKW0S3aaTj9y6B/PRzPjMENFPOLaHdGuTWj3JmjS05vRA2S2hEyjqHozXNAo5IDWRcxJM1yx3b3Z/vzhJOEfPDA2A5Xjy3IAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/781f456bde8bb93382834539a3b7c66b/c1b63/Untitled10.png&quot;
+        srcset=&quot;/static/781f456bde8bb93382834539a3b7c66b/5a46d/Untitled10.png 300w,
+/static/781f456bde8bb93382834539a3b7c66b/0a47e/Untitled10.png 600w,
+/static/781f456bde8bb93382834539a3b7c66b/c1b63/Untitled10.png 1200w,
+/static/781f456bde8bb93382834539a3b7c66b/bd44e/Untitled10.png 1643w&quot;
+        sizes=&quot;(max-width: 1200px) 100vw, 1200px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;BuildIoRingWriteFile()&lt;/code&gt; 함수를 통해 두 번째 인자인 &lt;strong&gt;reqFile&lt;/strong&gt;에 &lt;strong&gt;reqBuffer&lt;/strong&gt;의 내용이 쓰이게 됩니다. &lt;/p&gt;
+&lt;p&gt;위 코드의 118번째 라인을 참고해 보면, &lt;strong&gt;reqBuffer&lt;/strong&gt;는 &lt;strong&gt;IoRingBufferRefFromIndexAndOffset&lt;/strong&gt; 을 통해 Preregister 배열의 0번째 index에서 값을 참고합니다. &lt;/p&gt;
+&lt;p&gt;0번째 index에 담겨있는 값은 위 코드에서 &lt;strong&gt;pMcBufferEntry&lt;/strong&gt; 구조체에 담겨있습니다. &lt;/p&gt;
+&lt;p&gt;결론적으로, &lt;code class=&quot;language-text&quot;&gt;BuildIoRing**Write**File()&lt;/code&gt; 을 통해 SytemToken 주소값 얻을 수 있는 것입니다.&lt;/p&gt;
+&lt;p&gt;이제 이 SystemToken 값을 권한을 상승시킬 Target 프로세스의 EPROCESS 객체 Token 부분에 덮어씌우면 됩니다.!&lt;/p&gt;
+&lt;p&gt;방법은 아래 그림과 같습니다.&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;WriteFile()&lt;/code&gt;을 통해 SystemToken값을 named pipe에 작성 해 준후, &lt;code class=&quot;language-text&quot;&gt;BuildIoRing**Read**File()&lt;/code&gt;을 통해 named pipe에 있는 SystemToken값을  reqBuffer가 참고하는 주소에 적습니다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;poc 코드 상에서 namedpipe를 사용함에도, 변수 이름으로 reqFile을 사용한 것에 대해 혼동이 없으셨으면 합니다.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;named pipe가 아닌 file로 해도 괜찮습니다만, 포렌식을 더욱 어렵게 하기 위해 pipe를 사용했다고 합니다.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1200px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 51.33333333333333%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAKCAYAAAC0VX7mAAAACXBIWXMAABcRAAAXEQHKJvM/AAABm0lEQVQoz42SW2+CQBSE0TZqwEvjFW1RQKiICnJRBKy01tjW9PbS9K3//19MD1ojaTXpw+TssuTL7MwyzWsTnXEIZbKEYPho6Q6u+jYuBy6tbXT0Ke0dKPRd1izwA4fOLNQkHVWp/0dMcRCBNR5QCV5RmK7Bmne4MO5RHC7BDu/AaSFYPURN9dCSbNS6E3CKh7Q0QVp0dzMhptCfI2eskF8QdP6Ipv8C3tpAdN7RMp7Ajx7QpHPuegZGsMC0bZr2bh5TabBATl+i1AvQM0K0tRmqok2ytqqRi4bkgRPMHXAP7TjHVdRvtsC8fovCKALX95FVfaTlGVIKiZyl6YoZJUSm6yOnznEue6ehsUN2uEJpdI+ys0YjzrEXUh4ezuKs1N3MKsH/gRktQk6eIq/526APWf1cUUiuxwfYNrdfwLiUwniDzvoL7egDcrBBw7olR8ddpPbrJDT5T/ws8uYj+OgTdf8NYviMkhEdXCUbFBINH4PtS8lSKXVqVx4GEM0FpPEKvDZHpeuRpqhIDsqSiyq9wbrqotx1T0K/AZjbF87lvXUmAAAAAElFTkSuQmCC&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/b109973831a4410002115d64178c6ae5/c1b63/Untitled11.png&quot;
+        srcset=&quot;/static/b109973831a4410002115d64178c6ae5/5a46d/Untitled11.png 300w,
+/static/b109973831a4410002115d64178c6ae5/0a47e/Untitled11.png 600w,
+/static/b109973831a4410002115d64178c6ae5/c1b63/Untitled11.png 1200w,
+/static/b109973831a4410002115d64178c6ae5/9eaa0/Untitled11.png 1676w&quot;
+        sizes=&quot;(max-width: 1200px) 100vw, 1200px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;최종적으로 SystemToken 값이 권한 상승 Target 프로세스의 Token 값에 덮어씌워진 걸 확인할 수 있습니다.!&lt;/p&gt;
+&lt;p&gt;&lt;span
+      class=&quot;gatsby-resp-image-wrapper&quot;
+      style=&quot;position: relative; display: block; margin-left: auto; margin-right: auto; max-width: 1041px; &quot;
+    &gt;
+      &lt;span
+    class=&quot;gatsby-resp-image-background-image&quot;
+    style=&quot;padding-bottom: 84.66666666666669%; position: relative; bottom: 0; left: 0; background-image: url(&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAARCAYAAADdRIy+AAAACXBIWXMAABcRAAAXEQHKJvM/AAADBUlEQVQ4y32Ta5OaSBiF/f//Jp9StfttMskkiKBcR/GCIIKoXBRQATk5zY67k9RsuuqtFmhPv+f00wPp6UtnDWWMOE++fYP28gLl6Qvi7RbnokSaZjhkZ+ySAml2QsLnLM9xzEtk5wpFWeFUlF17v2Ok291gn6b4Lsud5cyhmK+wVx7CJMfSDxDt9wjjHZzNDtoywtLbwNv4WK1WsJcbRIcU51OOy+UKjs6erzDIwqhT//4LjiR3hmRg8kOH+qLjdaghcWYo1h6O82Vf0XSOdLlGHu9xPB6QZxlOp5Nw0ZXFGcZ00Q2SIMD3z59h0e413IKrgDQBshRcjfvxCEvWuInaV+LvgKbBR8Nylhik+QljXcPEMLBw19iEIVx/Q6sxWi5qug7bKETKjY7cqOO7O9+1bYs7cxNz07b/CSZJiqEkQRmNMBIly5i+vmIxnyOieFkU8DyPOV1QliUN5DSQIGEJuzE3Pp/P7zrkqamKAk3TYNs2Elp8jI6diC5msxky5iWePypxwr9Y/sr81MkEJgXr3/Kp66YX3AqM3jr5XfD+XnAfbBGu1/CERVqryd6ZXZbEqb32OODefnwIj/GLoK3pMFUVhjLCVJvAUkeY6RPEvke4A6SE1z9UWMcnopL0mSXcLCTo11uDlo4elu25i0HO0H8MJdgEe2gu8HVMuL093OgInxBvdzHcIMJ6E2LDTYJg09tfuD5/b3Eg/CKKS1VBNWyesutC+fQJztMzfEWHS+aW0hiBquHCGGp+91UTrmJhIZsIdQcNT7dhDFVV4spYRLVNjYk15aEcDpCen6ERmUtOmDu239asVqSPlrgYmkUSdOicq+Lyv1n2Vy8hV+p4jDGxUTiPmKeijmFaFmHOe2gty8QujnCrb30V5LFgVBVtCjaF5TvX9YKCQ5kwK2TR0HXMafPArgV3oq6iQ96ikJDXt7oXEWJCpHwTFoALEv7pkCcmBMWfLHb1YO09EuKb4zi43W5/xOffq/fMDCVeP9M0e4EHsGI0xEJ03Xf7xuWfbspP8XX3Erf1KdYAAAAASUVORK5CYII=&apos;); background-size: cover; display: block;&quot;
+  &gt;&lt;/span&gt;
+  &lt;img
+        class=&quot;gatsby-resp-image-image&quot;
+        alt=&quot;Untitled&quot;
+        title=&quot;Untitled&quot;
+        src=&quot;/static/bda53416372531c2202e5204b0b3269f/ee9b6/Untitled12.png&quot;
+        srcset=&quot;/static/bda53416372531c2202e5204b0b3269f/5a46d/Untitled12.png 300w,
+/static/bda53416372531c2202e5204b0b3269f/0a47e/Untitled12.png 600w,
+/static/bda53416372531c2202e5204b0b3269f/ee9b6/Untitled12.png 1041w&quot;
+        sizes=&quot;(max-width: 1041px) 100vw, 1041px&quot;
+        style=&quot;width:100%;height:100%;margin:0;vertical-align:middle;position:absolute;top:0;left:0;&quot;
+        loading=&quot;lazy&quot;
+      /&gt;
+    &lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;아래는 POC 영상입니다.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;Analyzing_CVE_2023_21768%5CUntitled.gif&quot; alt=&quot;Untitled&quot;&gt;&lt;/p&gt;
+&lt;h1 id=&quot;4-ref&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#4-ref&quot; aria-label=&quot;4 ref permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;4. Ref&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://windows-internals.com/i-o-rings-when-one-i-o-operation-is-not-enough/&quot;&gt;I/O Ring&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.sysnet.pe.kr/2/0/13065?pageno=0&quot;&gt;I/O Ring 사용 후기&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://recon.cx/2015/slides/recon2015-20-steven-vittitoe-Reverse-Engineering-Windows-AFD-sys.pdf&quot;&gt;Defcon afd.sys&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://securityintelligence.com/posts/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock/&quot;&gt;cve-2023-21768 분석&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content:encoded></item><item><title><![CDATA[Threat Hunting: Detecting APT37 TTPs]]></title><description><![CDATA[APT37은 최소 2012년부터 활동한 그룹으로 다양한 공격 방식을 사용해온 그룹입니다.  본 글에서는 APT37의 여러 위협 활동 중 최근(21년) 일어난 개인PC…]]></description><link>https://hyunjungg.github.io/threat_hunting/Threat_Hunting_Detecting_APT37_TTPs/</link><guid isPermaLink="false">https://hyunjungg.github.io/threat_hunting/Threat_Hunting_Detecting_APT37_TTPs/</guid><pubDate>Sun, 26 Mar 2023 16:58:13 GMT</pubDate><content:encoded>&lt;p&gt;APT37은 최소 2012년부터 활동한 그룹으로 다양한 공격 방식을 사용해온 그룹입니다. &lt;/p&gt;
 &lt;p&gt;본 글에서는 APT37의 여러 위협 활동 중 최근(21년) 일어난 개인PC를 타겟으로 정보를 탈취하는 행위에 사용한 공격방식을 시뮬레이션 하고 해당 위협을 탐지하는 방법에 대해 설명합니다. (APT37 그룹 고유의 위협 및 특징을 탐지하기보다는, 범용적인 TTP를 탐지하는 것에 목적을 두고 있습니다.)&lt;/p&gt;
 &lt;p&gt;악성코드 샘플을 수집하지 못한 관계로 오로지 APT37 분석 리포트들만을 참고하여 위협을 모사했습니다. 하지만 제가 임의로 특정 Technique을 추가하거나 제외한 부분도 있습니다. &lt;/p&gt;
 &lt;blockquote&gt;
